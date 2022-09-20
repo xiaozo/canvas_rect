@@ -131,55 +131,43 @@ export default {
           if (!!isDragBg) {
             ///拖动bg
 
-            // if (that.imageHeight * scale <= that.canvasHeight && that.imageWidth * scale <= that.canvasWidth) {
-            //   ///如果不能移动就不要移动
-            //   return
-            // }
+     
 
             var cx = e.clientX - canvasLeft;
             var cy = e.clientY - canvasTop;
 
+
             var otranslateY = translateY;
             var otranslateX = translateX;
+             that.translate(otranslateX - (gX - cx),otranslateY - (gY - cy))
 
-            translateY = otranslateY - (gY - cy);
-            translateX = otranslateX - (gX - cx);
+            // var otranslateY = translateY;
+            // var otranslateX = translateX;
 
-            // if (translateY > 0) {
-            //   translateY = 0
-            // }
+            // translateY = otranslateY - (gY - cy);
+            // translateX = otranslateX - (gX - cx);
 
-            // if (translateX > 0) {
-            //   translateX = 0
-            // }
+           
 
 
-            // if (that.canvasWidth - translateX > that.imageWidth * scale) {
-            //   translateX = Math.min(that.canvasWidth - that.imageWidth * scale, orginTranslateX);
-            // }
+            // const xyDict = that._adjuestTranslate(translateX, translateY)
+            // translateX = xyDict.translateX
+            // translateY = xyDict.translateY
 
-            // if (that.canvasHeight - translateY > that.imageHeight * scale) {
-            //   translateY = Math.min(that.canvasHeight - that.imageHeight * scale, orginTranslateY);
-            // }
+            // var oscale = scale;
 
-            const xyDict = that._adjuestTranslate(translateX, translateY)
-            translateX = xyDict.translateX
-            translateY = xyDict.translateY
-
-            var oscale = scale;
-
-            $('canvas')
-              ///先进行1.0的缩放还原,不然后续的translateCanvas会有问题,因为translate的是基于scale:1.0计算位置
-              .scaleCanvas({
-                scale: 1 / oscale
-              })
-              .translateCanvas({
-                translateX: translateX - otranslateX, translateY: translateY - otranslateY
-              })
-              .scaleCanvas({
-                scale: scale
-              })
-              .drawLayers()
+            // $('canvas')
+            //   ///先进行1.0的缩放还原,不然后续的translateCanvas会有问题,因为translate的是基于scale:1.0计算位置
+            //   .scaleCanvas({
+            //     scale: 1 / oscale
+            //   })
+            //   .translateCanvas({
+            //     translateX: translateX - otranslateX, translateY: translateY - otranslateY
+            //   })
+            //   .scaleCanvas({
+            //     scale: scale
+            //   })
+            //   .drawLayers()
 
             gX = cx;
             gY = cy;
@@ -298,6 +286,7 @@ export default {
     })
   },
   methods: {
+    ///调整Translate
     _adjuestTranslate(_translateX, _translateY) {
       if (_translateY > 0) {
         _translateY = 0
@@ -316,11 +305,11 @@ export default {
       }
 
 
-      if (this.canvasWidth - translateX > this.imageWidth * scale) {
+      if (this.canvasWidth - _translateX > this.imageWidth * scale) {
         _translateX = Math.min(this.canvasWidth - this.imageWidth * scale, (this.canvasWidth - this.imageWidth * scale) / 2.0);
       }
 
-      if (this.canvasHeight - translateY > this.imageHeight * scale) {
+      if (this.canvasHeight - _translateY > this.imageHeight * scale) {
         _translateY = Math.min(this.canvasHeight - this.imageHeight * scale, (this.canvasHeight - this.imageHeight * scale) / 2.0);
       }
 
@@ -432,8 +421,98 @@ export default {
 
     },
     scalebig() {
+      // var oscale = scale;
+      // scale = 1.7;
+
+      // /// (this.canvasHeight / 2.0 - translateY) / oscale 获取中间点的y坐标
+      // ///(this.canvasHeight / 2.0 - translateY) / oscale * scale 获取放大后的物理坐标
+      // /// -((this.canvasHeight / 2.0 - translateY) / oscale * scale - this.canvasHeight / 2.0) 获取translateY 偏移量 (确定最终获取translateY)
+      // var otranslateY = translateY;
+      // translateY = -((this.canvasHeight / 2.0 - translateY) / oscale * scale - this.canvasHeight / 2.0)
+      // var otranslateX = translateX;
+      // translateX = -((this.canvasWidth / 2.0 - translateX) / oscale * scale - this.canvasWidth / 2.0)
+
+      // const xyDict = this._adjuestTranslate(translateX, translateY)
+      // translateX = xyDict.translateX
+      // translateY = xyDict.translateY
+
+      // $('canvas')
+      //   ///先进行1.0的缩放还原,不然后续的translateCanvas会有问题,因为translate的是基于scale:1.0计算位置
+      //   .scaleCanvas({
+      //     scale: 1 / oscale
+      //   })
+      //   .translateCanvas({
+      //     translateX: translateX - otranslateX, translateY: translateY - otranslateY
+      //   })
+      //   .scaleCanvas({
+      //     scale: scale
+      //   })
+      //   .drawLayers()
+
+      this.scale(1.7)
+
+
+
+    },
+    scalesmall() {
+      // var oscale = scale;
+      // scale = orginScale;
+
+      // var otranslateY = translateY;
+      // /// (this.canvasHeight / 2.0 - translateY) / oscale 获取中间点的y坐标
+      // ///(this.canvasHeight / 2.0 - translateY) / oscale * scale 获取放大后的物理坐标
+      // /// -((this.canvasHeight / 2.0 - translateY) / oscale * scale - this.canvasHeight / 2.0) 获取translateY 偏移量 
+      // translateY = -((this.canvasHeight / 2.0 - translateY) / oscale * scale - this.canvasHeight / 2.0)
+      // var otranslateX = translateX;
+      // translateX = -((this.canvasWidth / 2.0 - translateX) / oscale * scale - this.canvasWidth / 2.0)
+
+      // const xyDict = this._adjuestTranslate(translateX, translateY)
+      // translateX = xyDict.translateX
+      // translateY = xyDict.translateY
+
+
+      // $('canvas')
+      //   ///先进行1.0的缩放还原,不然后续的translateCanvas会有问题,因为translate的是基于scale:1.0计算位置
+      //   .scaleCanvas({
+      //     scale: 1 / oscale
+      //   })
+      //   .translateCanvas({
+      //     translateX: translateX - otranslateX, translateY: translateY - otranslateY
+      //   })
+      //   .scaleCanvas({
+      //     scale: scale
+      //   })
+      //   .drawLayers()
+
+      this.scale(orginScale)
+
+    },
+    translate(_translateX, _translateY) {
+      var otranslateY = translateY;
+      var otranslateX = translateX;
+
+      const xyDict = this._adjuestTranslate(_translateX, _translateY)
+      translateX = xyDict.translateX
+      translateY = xyDict.translateY
+
       var oscale = scale;
-      scale = 1.7;
+
+      $('canvas')
+        ///先进行1.0的缩放还原,不然后续的translateCanvas会有问题,因为translate的是基于scale:1.0计算位置
+        .scaleCanvas({
+          scale: 1 / oscale
+        })
+        .translateCanvas({
+          translateX: translateX - otranslateX, translateY: translateY - otranslateY
+        })
+        .scaleCanvas({
+          scale: scale
+        })
+        .drawLayers()
+    },
+    scale(_scale) {
+      var oscale = scale;
+      scale = _scale;
 
       /// (this.canvasHeight / 2.0 - translateY) / oscale 获取中间点的y坐标
       ///(this.canvasHeight / 2.0 - translateY) / oscale * scale 获取放大后的物理坐标
@@ -459,41 +538,6 @@ export default {
           scale: scale
         })
         .drawLayers()
-
-
-      ///中心点
-
-    },
-    scalesmall() {
-      var oscale = scale;
-      scale = orginScale;
-
-      var otranslateY = translateY;
-      /// (this.canvasHeight / 2.0 - translateY) / oscale 获取中间点的y坐标
-      ///(this.canvasHeight / 2.0 - translateY) / oscale * scale 获取放大后的物理坐标
-      /// -((this.canvasHeight / 2.0 - translateY) / oscale * scale - this.canvasHeight / 2.0) 获取translateY 偏移量 
-      translateY = -((this.canvasHeight / 2.0 - translateY) / oscale * scale - this.canvasHeight / 2.0)
-      var otranslateX = translateX;
-      translateX = -((this.canvasWidth / 2.0 - translateX) / oscale * scale - this.canvasWidth / 2.0)
-
-      const xyDict = this._adjuestTranslate(translateX, translateY)
-      translateX = xyDict.translateX
-      translateY = xyDict.translateY
-
-
-      $('canvas')
-        ///先进行1.0的缩放还原,不然后续的translateCanvas会有问题,因为translate的是基于scale:1.0计算位置
-        .scaleCanvas({
-          scale: 1 / oscale
-        })
-        .translateCanvas({
-          translateX: translateX - otranslateX, translateY: translateY - otranslateY
-        })
-        .scaleCanvas({
-          scale: scale
-        })
-        .drawLayers()
-
     },
     edit(maindata) {
       var that = this;
