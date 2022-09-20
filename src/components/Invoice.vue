@@ -130,16 +130,10 @@ export default {
         $("canvas").mousemove(function (e) {
           if (!!isDragBg) {
             ///拖动bg
-
-     
-
             var cx = e.clientX - canvasLeft;
             var cy = e.clientY - canvasTop;
 
-
-            var otranslateY = translateY;
-            var otranslateX = translateX;
-             that.translate(otranslateX - (gX - cx),otranslateY - (gY - cy))
+             that.translate(translateX - (gX - cx),translateY - (gY - cy))
 
             // var otranslateY = translateY;
             // var otranslateX = translateX;
@@ -246,13 +240,13 @@ export default {
           if (!!currentData) {
             var activePoint = currentData.activePoint
             if (activePoint.width < 0) {
-              activePoint.x += currentData.width;
-              activePoint.width = -currentData.width;
+              activePoint.x += activePoint.width;
+              activePoint.width = -activePoint.width;
             }
 
             if (activePoint.height < 0) {
-              activePoint.y += currentData.height;
-              activePoint.height = -currentData.height;
+              activePoint.y += activePoint.height;
+              activePoint.height = -activePoint.height;
             }
             if (!!currentData.move && !!togetherMove) {
               ///重新给孩子data赋值x、y
