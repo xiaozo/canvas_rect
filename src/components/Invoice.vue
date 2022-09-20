@@ -115,6 +115,7 @@ export default {
         $("canvas").mousemove(function (e) {
           if (!!currentData && currentData.status == 1) {
             var data = currentData;
+            var activePoint = currentData.activePoint
             var cx = e.clientX - canvasLeft;
             var cy = e.clientY - canvasTop;
             cx /= scale;
@@ -123,12 +124,12 @@ export default {
             function block() {
               if (currentData.move == true) {
                 ///移动
-                data.y += cy - gY;
-                data.x += cx - gX;
+                activePoint.y += cy - gY;
+                activePoint.x += cx - gX;
 
                 if (!!togetherMove) {
                   ///带着孩子一起移动
-                  var group = currentData.groups[currentData.groups.length - 1]
+                  var group = activePoint.groups[activePoint.groups.length - 1]
                   var xx = cx - gX
                   var yy = cy - gY
                   $('canvas').setLayerGroup(group, {
@@ -141,26 +142,26 @@ export default {
               }
               if (currentData.direction == 2) {
                 ///右上角
-                data.width += cx - gX;
-                data.y += cy - gY;
-                data.height += gY - cy;
+                activePoint.width += cx - gX;
+                activePoint.y += cy - gY;
+                activePoint.height += gY - cy;
               } else if (currentData.direction == 1) {
                 ///左上角
-                data.x += cx - gX;
-                data.width += gX - cx;
-                data.y += cy - gY;
-                data.height += gY - cy;
+                activePoint.x += cx - gX;
+                activePoint.width += gX - cx;
+                activePoint.y += cy - gY;
+                activePoint.height += gY - cy;
 
               } else if (currentData.direction == 3) {
                 ///左下角
-                data.height += cy - gY;
-                data.x += cx - gX;
-                data.width += gX - cx;
+                activePoint.height += cy - gY;
+                activePoint.x += cx - gX;
+                activePoint.width += gX - cx;
 
               } else if (currentData.direction == 4) {
                 ///右下角
-                data.height += cy - gY;
-                data.width += cx - gX;
+                activePoint.height += cy - gY;
+                activePoint.width += cx - gX;
 
               }
 
@@ -176,24 +177,26 @@ export default {
 
 
         $("body").mouseup(function () {
+       
           if (!!currentData) {
-            if (currentData.width < 0) {
-              currentData.x += currentData.width;
-              currentData.width = -currentData.width;
+            var activePoint = currentData.activePoint
+            if (activePoint.width < 0) {
+              activePoint.x += currentData.width;
+              activePoint.width = -currentData.width;
             }
 
-            if (currentData.height < 0) {
-              currentData.y += currentData.height;
-              currentData.height = -currentData.height;
+            if (activePoint.height < 0) {
+              activePoint.y += currentData.height;
+              activePoint.height = -currentData.height;
             }
             if (!!currentData.move && !!togetherMove) {
               ///重新给孩子data赋值x、y
-              var group = currentData.groups[currentData.groups.length - 1]
+              var group = activePoint.groups[activePoint.groups.length - 1]
               var array = $('canvas').getLayerGroup(group)
               for (let index = 0; index < array.length; index++) {
                 const element = array[index];
-                element.data.data.x = element.x;
-                element.data.data.y = element.y;
+                element.data.data.points[element.data.index].x = element.x;
+                element.data.data.points[element.data.index].y = element.y;
               }
 
             }
@@ -222,14 +225,21 @@ export default {
         this.edit(currentData)
         // currentData = null
 
+        var activePoint = superData.activePoint;
+        if (!activePoint) return;
+
         var timestamp = Date.parse(new Date());
-        var arr1 = superData.groups.slice(0);
+        var arr1 = activePoint.groups.slice(0);
         arr1.push("boxes-child-" + timestamp);
         var groups = arr1
-        var point = { x: superData.x + 20, y: superData.y + 20 }
+        var point = { x: activePoint.x + 20, y: activePoint.y + 20 }
+        var childPoint =  { x: point.x, y: point.y, width: 50, height: 50,groups: groups,name: "mybox-c" + timestamp,superName: activePoint.name}
         var childData = {
-          x: point.x, y: point.y, width: 50, height: 50, groups: groups, status: 0, isEdit: true, move: false, name: "mybox-c" + timestamp, color: "#585",
-          superName: superData.name
+          points:[
+          childPoint
+          ],
+         status: 0, isEdit: true, move: false, color: "#585",activePoint:childPoint,
+          
         }
         superData.child.push(childData)
 
@@ -263,8 +273,12 @@ export default {
 
       var timestamp = Date.parse(new Date());
       var centerPoint = this._getCenterPoint();
+      var point =  {x:centerPoint.x,y:centerPoint.y, width: 50, height: 50,groups: ["boxes-child-" + timestamp],name: "mybox-" + timestamp}
       currentData = {
-        x: centerPoint.x, y: centerPoint.y, width: 50, height: 50, groups: ["boxes-child-" + timestamp], status: 0, isEdit: true, move: false, name: "mybox-" + timestamp, color: "#000",
+        points:[
+          point
+        ],
+        status: 0, isEdit: true, move: false, color: "#000",activePoint:point,
         child: []
       }
       this.edit(currentData)
@@ -275,12 +289,9 @@ export default {
 
     addSmall() {
       if (!!currentData && !!currentData.child) {
-
         this._addSmallQuestionBySuperData(currentData)
-
-
-      } else if (!!currentData && currentData.superName) {
-        this._addSmallQuestionBySuperData(this._getDataByName(currentData.superName))
+      } else if (!!currentData && currentData.activePoint.superName) {
+        this._addSmallQuestionBySuperData(this._getDataByName(currentData.activePoint.superName))
         
       }   else {
         alert("选择一个大题框")
@@ -288,11 +299,13 @@ export default {
     },
     del() {
       if (!!currentData) {
-        $('canvas').removeLayerGroup(currentData.groups[currentData.groups.length - 1]).drawLayers();
-        if (!!currentData.superName) {
-          var superData = this._getDataByName(currentData.superName)
+         var activePoint = currentData.activePoint
+        $('canvas').removeLayerGroup(activePoint.groups[activePoint.groups.length - 1]).drawLayers();
+        if (!!activePoint.superName) {
+          var superData = this._getDataByName(activePoint.superName)
           ///小题
           var s = superData.child
+        
           s.splice(s.indexOf(currentData), 1)
           this.edit(superData)
         } else {
@@ -362,15 +375,16 @@ export default {
         .drawLayers()
 
     },
-    edit(data) {
+    edit(maindata) {
       var that = this;
-      var { x, y, width, height, groups, name, color } = data
+     
+      for (let index = 0; index < maindata.points.length; index++) {
+        const data = maindata.points[index];
+        var { x, y, width, height, groups, name } = data
+        var { color } = maindata
+        $('canvas').removeLayerGroup(data.groups[data.groups.length - 1]).drawLayers();
 
-
-      $('canvas').removeLayerGroup(data.groups[data.groups.length - 1]).drawLayers();
-
-
-      $('canvas').drawRect({
+        $('canvas').drawRect({
         layer: true,
         strokeStyle: color,
         strokeWidth: 2,
@@ -380,7 +394,7 @@ export default {
         x: x, y: y,
         width: width, height: height,
         data: {
-          data: data
+          data: maindata,index:index
         },
         mousedown: function (layer) {
 
@@ -390,6 +404,7 @@ export default {
             that.edit(currentData)
           }
           currentData = layer.data.data;
+          currentData.activePoint = currentData.points[layer.data.index]
           currentData.isEdit = true;
           currentData.move = true;
 
@@ -404,7 +419,7 @@ export default {
       });
 
       ///绘制4个点
-      if (data.isEdit == true) {
+      if (maindata.isEdit == true) {
         // console.log(name);
         ///左上角
         $('canvas').drawArc({
@@ -414,10 +429,11 @@ export default {
           x: x - 6, y: y - 6,
           radius: 6,
           data: {
-            data: data
+            data: maindata,index:index
           },
           mousedown: function (layer) {
             currentData = layer.data.data;
+            currentData.activePoint = currentData.points[layer.data.index]
             currentData.direction = 1;
 
           },
@@ -432,10 +448,11 @@ export default {
           x: x + width - 6, y: y - 6,
           radius: 6,
           data: {
-            data: data
+            data: maindata,index:index
           },
           mousedown: function (layer) {
             currentData = layer.data.data;
+            currentData.activePoint = currentData.points[layer.data.index]
             currentData.direction = 2;
 
           },
@@ -449,10 +466,11 @@ export default {
           x: x - 6, y: y + height - 6,
           radius: 6,
           data: {
-            data: data
+            data: maindata,index:index
           },
           mousedown: function (layer) {
             currentData = layer.data.data;
+            currentData.activePoint = currentData.points[layer.data.index]
             currentData.direction = 3;
 
           },
@@ -466,10 +484,11 @@ export default {
           x: x + width - 6, y: y + height - 6,
           radius: 6,
           data: {
-            data: data
+            data: maindata,index:index
           },
           mousedown: function (layer) {
             currentData = layer.data.data;
+            currentData.activePoint = currentData.points[layer.data.index]
             currentData.direction = 4;
 
           },
@@ -478,12 +497,13 @@ export default {
 
       }
 
-      if (!!data.child) {
-        let array = data.child;
+      if (!!maindata.child) {
+        let array = maindata.child;
         for (let index = 0; index < array.length; index++) {
           const element = array[index];
           this.edit(element)
         }
+      }
       }
 
     },
