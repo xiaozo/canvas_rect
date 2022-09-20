@@ -18,6 +18,7 @@
 
 ///移动框是否带着孩子框移动
 var togetherMove = true
+var isDragBg = false;
 
 var canvasLeft, canvasTop, gX, gY;
 var scale, orginScale = 1;
@@ -83,6 +84,10 @@ export default {
           layer: true,
           source: '/static/image1.jpg',
           x: 0, y: 0,
+          mousedown: function (layer) {
+            isDragBg = true
+
+          },
         });
 
         // $('canvas').addLayer({
@@ -98,21 +103,54 @@ export default {
 
 
         $("canvas").mousedown(function (e) {
-          if (!!currentData) {
+          if (!!currentData || !!isDragBg) {
             currentData.status = 1;
             canvasLeft = document.getElementById("myCanvas").getBoundingClientRect().left;
             canvasTop = document.getElementById("myCanvas").getBoundingClientRect().top;
             gX = (e.clientX - canvasLeft);
             gY = e.clientY - canvasTop;
-            gX /= scale;
-            gY /= scale;
-
 
           }
 
         });
 
         $("canvas").mousemove(function (e) {
+          // if (!!isDragBg) {
+          //   ///拖动bg
+          //   var cx = e.clientX - canvasLeft;
+          //   var cy = e.clientY - canvasTop;
+            
+          //   var otranslateY = translateY ;
+          //   var otranslateX = translateX ;
+
+          //   translateY = otranslateY - (gY - cy);
+          //   translateX =  otranslateX - (gX - cx);
+
+          //   if (translateY > 0 || translateX > 0) {
+          //     translateY = otranslateY
+          //     translateX = otranslateX
+          //     return
+          //   }
+
+          //   var oscale = scale;
+           
+          //   $('canvas')
+          //     ///先进行1.0的缩放还原,不然后续的translateCanvas会有问题,因为translate的是基于scale:1.0计算位置
+          //     .scaleCanvas({
+          //       scale: 1 / oscale
+          //     })
+          //     .translateCanvas({
+          //       translateX: translateX - otranslateX, translateY: translateY - otranslateY
+          //     })
+          //     .scaleCanvas({
+          //       scale: scale
+          //     })
+          //     .drawLayers()
+
+          //   gX = cx;
+          //   gY = cy;
+          //   return
+          // }
           if (!!currentData && currentData.status == 1) {
             var data = currentData;
             var activePoint = currentData.activePoint
@@ -177,7 +215,12 @@ export default {
 
 
         $("body").mouseup(function () {
-       
+          // if (!!isDragBg) {
+          //   isDragBg = false
+          //   ///拖动bg
+          //   return
+          // }
+
           if (!!currentData) {
             var activePoint = currentData.activePoint
             if (activePoint.width < 0) {
@@ -206,6 +249,7 @@ export default {
             currentData.direction = 0;
             currentData.move = false;
             currentData.status = 0;
+
           }
 
         });
@@ -222,29 +266,29 @@ export default {
   methods: {
     _addSmallQuestionBySuperData(superData) {
       currentData.isEdit = false;
-        this.edit(currentData)
-        // currentData = null
+      this.edit(currentData)
+      // currentData = null
 
-        var activePoint = superData.activePoint;
-        if (!activePoint) return;
+      var activePoint = superData.activePoint;
+      if (!activePoint) return;
 
-        var timestamp = Date.parse(new Date());
-        var arr1 = activePoint.groups.slice(0);
-        arr1.push("boxes-child-" + timestamp);
-        var groups = arr1
-        var point = { x: activePoint.x + 20, y: activePoint.y + 20 }
-        var childPoint =  { x: point.x, y: point.y, width: 50, height: 50,groups: groups,name: "mybox-c" + timestamp,superName: activePoint.name}
-        var childData = {
-          points:[
+      var timestamp = Date.parse(new Date());
+      var arr1 = activePoint.groups.slice(0);
+      arr1.push("boxes-child-" + timestamp);
+      var groups = arr1
+      var point = { x: activePoint.x + 20, y: activePoint.y + 20 }
+      var childPoint = { x: point.x, y: point.y, width: 50, height: 50, groups: groups, name: "mybox-c" + timestamp, superName: activePoint.name }
+      var childData = {
+        points: [
           childPoint
-          ],
-         status: 0, isEdit: true, move: false, color: "#585",activePoint:childPoint,
-          
-        }
-        superData.child.push(childData)
+        ],
+        status: 0, isEdit: true, move: false, color: "#585", activePoint: childPoint,
 
-        currentData = childData
-        this.edit(currentData)
+      }
+      superData.child.push(childData)
+
+      currentData = childData
+      this.edit(currentData)
 
     },
     _getDataByName(name) {
@@ -273,12 +317,12 @@ export default {
 
       var timestamp = Date.parse(new Date());
       var centerPoint = this._getCenterPoint();
-      var point =  {x:centerPoint.x,y:centerPoint.y, width: 50, height: 50,groups: ["boxes-child-" + timestamp],name: "mybox-" + timestamp}
+      var point = { x: centerPoint.x, y: centerPoint.y, width: 50, height: 50, groups: ["boxes-child-" + timestamp], name: "mybox-" + timestamp }
       currentData = {
-        points:[
+        points: [
           point
         ],
-        status: 0, isEdit: true, move: false, color: "#000",activePoint:point,
+        status: 0, isEdit: true, move: false, color: "#000", activePoint: point,
         child: []
       }
       this.edit(currentData)
@@ -292,20 +336,20 @@ export default {
         this._addSmallQuestionBySuperData(currentData)
       } else if (!!currentData && currentData.activePoint.superName) {
         this._addSmallQuestionBySuperData(this._getDataByName(currentData.activePoint.superName))
-        
-      }   else {
+
+      } else {
         alert("选择一个大题框")
       }
     },
     del() {
       if (!!currentData) {
-         var activePoint = currentData.activePoint
+        var activePoint = currentData.activePoint
         $('canvas').removeLayerGroup(activePoint.groups[activePoint.groups.length - 1]).drawLayers();
         if (!!activePoint.superName) {
           var superData = this._getDataByName(activePoint.superName)
           ///小题
           var s = superData.child
-        
+
           s.splice(s.indexOf(currentData), 1)
           this.edit(superData)
         } else {
@@ -323,12 +367,12 @@ export default {
     },
     scalebig() {
       var oscale = scale;
-      scale = 1.6;
-      var otranslateY = translateY;
+      scale = 1.5;
+
       /// (this.canvasHeight / 2.0 - translateY) / oscale 获取中间点的y坐标
       ///(this.canvasHeight / 2.0 - translateY) / oscale * scale 获取放大后的物理坐标
       /// -((this.canvasHeight / 2.0 - translateY) / oscale * scale - this.canvasHeight / 2.0) 获取translateY 偏移量 (确定最终获取translateY)
-
+      var otranslateY = translateY;
       translateY = -((this.canvasHeight / 2.0 - translateY) / oscale * scale - this.canvasHeight / 2.0)
       var otranslateX = translateX;
       translateX = -((this.canvasWidth / 2.0 - translateX) / oscale * scale - this.canvasWidth / 2.0)
@@ -377,7 +421,7 @@ export default {
     },
     edit(maindata) {
       var that = this;
-     
+
       for (let index = 0; index < maindata.points.length; index++) {
         const data = maindata.points[index];
         var { x, y, width, height, groups, name } = data
@@ -385,125 +429,125 @@ export default {
         $('canvas').removeLayerGroup(data.groups[data.groups.length - 1]).drawLayers();
 
         $('canvas').drawRect({
-        layer: true,
-        strokeStyle: color,
-        strokeWidth: 2,
-        name: name,
-        groups: groups,
-        // source: 'https://projects.calebevans.me/jcanvas/assets/images/fish.jpg',
-        x: x, y: y,
-        width: width, height: height,
-        data: {
-          data: maindata,index:index
-        },
-        mousedown: function (layer) {
-
-
-          if (!!currentData) {
-            currentData.isEdit = false;
-            that.edit(currentData)
-          }
-          currentData = layer.data.data;
-          currentData.activePoint = currentData.points[layer.data.index]
-          currentData.isEdit = true;
-          currentData.move = true;
-
-        },
-        // mousemove: function (layer) {
-
-        // },
-        // mouseup: function (layer) {
-        //   boolmove = false;
-        // }
-
-      });
-
-      ///绘制4个点
-      if (maindata.isEdit == true) {
-        // console.log(name);
-        ///左上角
-        $('canvas').drawArc({
           layer: true,
+          strokeStyle: color,
+          strokeWidth: 2,
+          name: name,
           groups: groups,
-          fillStyle: 'gray',
-          x: x - 6, y: y - 6,
-          radius: 6,
+          // source: 'https://projects.calebevans.me/jcanvas/assets/images/fish.jpg',
+          x: x, y: y,
+          width: width, height: height,
           data: {
-            data: maindata,index:index
+            data: maindata, index: index
           },
           mousedown: function (layer) {
+
+
+            if (!!currentData) {
+              currentData.isEdit = false;
+              that.edit(currentData)
+            }
             currentData = layer.data.data;
             currentData.activePoint = currentData.points[layer.data.index]
-            currentData.direction = 1;
+            currentData.isEdit = true;
+            currentData.move = true;
 
           },
+          // mousemove: function (layer) {
+
+          // },
+          // mouseup: function (layer) {
+          //   boolmove = false;
+          // }
+
         });
 
+        ///绘制4个点
+        if (maindata.isEdit == true) {
+          // console.log(name);
+          ///左上角
+          $('canvas').drawArc({
+            layer: true,
+            groups: groups,
+            fillStyle: 'gray',
+            x: x - 6, y: y - 6,
+            radius: 6,
+            data: {
+              data: maindata, index: index
+            },
+            mousedown: function (layer) {
+              currentData = layer.data.data;
+              currentData.activePoint = currentData.points[layer.data.index]
+              currentData.direction = 1;
 
-        ///右上角
-        $('canvas').drawArc({
-          layer: true,
-          groups: groups,
-          fillStyle: 'gray',
-          x: x + width - 6, y: y - 6,
-          radius: 6,
-          data: {
-            data: maindata,index:index
-          },
-          mousedown: function (layer) {
-            currentData = layer.data.data;
-            currentData.activePoint = currentData.points[layer.data.index]
-            currentData.direction = 2;
-
-          },
-        });
-
-        ///左下角
-        $('canvas').drawArc({
-          layer: true,
-          groups: groups,
-          fillStyle: 'gray',
-          x: x - 6, y: y + height - 6,
-          radius: 6,
-          data: {
-            data: maindata,index:index
-          },
-          mousedown: function (layer) {
-            currentData = layer.data.data;
-            currentData.activePoint = currentData.points[layer.data.index]
-            currentData.direction = 3;
-
-          },
-        });
-
-        ///右下角
-        $('canvas').drawArc({
-          layer: true,
-          groups: groups,
-          fillStyle: 'gray',
-          x: x + width - 6, y: y + height - 6,
-          radius: 6,
-          data: {
-            data: maindata,index:index
-          },
-          mousedown: function (layer) {
-            currentData = layer.data.data;
-            currentData.activePoint = currentData.points[layer.data.index]
-            currentData.direction = 4;
-
-          },
-        });
+            },
+          });
 
 
-      }
+          ///右上角
+          $('canvas').drawArc({
+            layer: true,
+            groups: groups,
+            fillStyle: 'gray',
+            x: x + width - 6, y: y - 6,
+            radius: 6,
+            data: {
+              data: maindata, index: index
+            },
+            mousedown: function (layer) {
+              currentData = layer.data.data;
+              currentData.activePoint = currentData.points[layer.data.index]
+              currentData.direction = 2;
 
-      if (!!maindata.child) {
-        let array = maindata.child;
-        for (let index = 0; index < array.length; index++) {
-          const element = array[index];
-          this.edit(element)
+            },
+          });
+
+          ///左下角
+          $('canvas').drawArc({
+            layer: true,
+            groups: groups,
+            fillStyle: 'gray',
+            x: x - 6, y: y + height - 6,
+            radius: 6,
+            data: {
+              data: maindata, index: index
+            },
+            mousedown: function (layer) {
+              currentData = layer.data.data;
+              currentData.activePoint = currentData.points[layer.data.index]
+              currentData.direction = 3;
+
+            },
+          });
+
+          ///右下角
+          $('canvas').drawArc({
+            layer: true,
+            groups: groups,
+            fillStyle: 'gray',
+            x: x + width - 6, y: y + height - 6,
+            radius: 6,
+            data: {
+              data: maindata, index: index
+            },
+            mousedown: function (layer) {
+              currentData = layer.data.data;
+              currentData.activePoint = currentData.points[layer.data.index]
+              currentData.direction = 4;
+
+            },
+          });
+
+
         }
-      }
+
+        if (!!maindata.child) {
+          let array = maindata.child;
+          for (let index = 0; index < array.length; index++) {
+            const element = array[index];
+            this.edit(element)
+          }
+        }
       }
 
     },
