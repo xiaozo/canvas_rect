@@ -15,6 +15,8 @@
 </template>
 
 <script>
+import ret from 'bluebird/js/release/util';
+
 
 ///移动框是否带着孩子框移动
 var togetherMove = true
@@ -45,6 +47,8 @@ export default {
     return {
       canvasWidth: 1000,
       canvasHeight: 800,
+      imageWidth: 0,
+      imageHeight: 0,
       url: ""
     }
   },
@@ -58,6 +62,9 @@ export default {
       img.src = '/static/image1.jpg';
 
       img.onload = function () {
+        that.imageWidth = img.width
+        that.imageHeight = img.height
+
         orginScale = scale = that.canvasWidth / img.width
         orginTranslateY = translateY = (that.canvasHeight - img.height * scale) / 2.0
         orginTranslateX = translateX = 0
@@ -104,53 +111,80 @@ export default {
 
         $("canvas").mousedown(function (e) {
           if (!!currentData || !!isDragBg) {
-            currentData.status = 1;
+
+
             canvasLeft = document.getElementById("myCanvas").getBoundingClientRect().left;
             canvasTop = document.getElementById("myCanvas").getBoundingClientRect().top;
             gX = (e.clientX - canvasLeft);
             gY = e.clientY - canvasTop;
 
+            if (!isDragBg) {
+              currentData.status = 1;
+              gX /= scale;
+              gY /= scale;
+            }
           }
 
         });
 
         $("canvas").mousemove(function (e) {
-          // if (!!isDragBg) {
-          //   ///拖动bg
-          //   var cx = e.clientX - canvasLeft;
-          //   var cy = e.clientY - canvasTop;
-            
-          //   var otranslateY = translateY ;
-          //   var otranslateX = translateX ;
+          if (!!isDragBg) {
+            ///拖动bg
 
-          //   translateY = otranslateY - (gY - cy);
-          //   translateX =  otranslateX - (gX - cx);
+            // if (that.imageHeight * scale <= that.canvasHeight && that.imageWidth * scale <= that.canvasWidth) {
+            //   ///如果不能移动就不要移动
+            //   return
+            // }
 
-          //   if (translateY > 0 || translateX > 0) {
-          //     translateY = otranslateY
-          //     translateX = otranslateX
-          //     return
-          //   }
+            var cx = e.clientX - canvasLeft;
+            var cy = e.clientY - canvasTop;
 
-          //   var oscale = scale;
-           
-          //   $('canvas')
-          //     ///先进行1.0的缩放还原,不然后续的translateCanvas会有问题,因为translate的是基于scale:1.0计算位置
-          //     .scaleCanvas({
-          //       scale: 1 / oscale
-          //     })
-          //     .translateCanvas({
-          //       translateX: translateX - otranslateX, translateY: translateY - otranslateY
-          //     })
-          //     .scaleCanvas({
-          //       scale: scale
-          //     })
-          //     .drawLayers()
+            var otranslateY = translateY;
+            var otranslateX = translateX;
 
-          //   gX = cx;
-          //   gY = cy;
-          //   return
-          // }
+            translateY = otranslateY - (gY - cy);
+            translateX = otranslateX - (gX - cx);
+
+            // if (translateY > 0) {
+            //   translateY = 0
+            // }
+
+            // if (translateX > 0) {
+            //   translateX = 0
+            // }
+
+
+            // if (that.canvasWidth - translateX > that.imageWidth * scale) {
+            //   translateX = Math.min(that.canvasWidth - that.imageWidth * scale, orginTranslateX);
+            // }
+
+            // if (that.canvasHeight - translateY > that.imageHeight * scale) {
+            //   translateY = Math.min(that.canvasHeight - that.imageHeight * scale, orginTranslateY);
+            // }
+
+            const xyDict = that._adjuestTranslate(translateX, translateY)
+            translateX = xyDict.translateX
+            translateY = xyDict.translateY
+
+            var oscale = scale;
+
+            $('canvas')
+              ///先进行1.0的缩放还原,不然后续的translateCanvas会有问题,因为translate的是基于scale:1.0计算位置
+              .scaleCanvas({
+                scale: 1 / oscale
+              })
+              .translateCanvas({
+                translateX: translateX - otranslateX, translateY: translateY - otranslateY
+              })
+              .scaleCanvas({
+                scale: scale
+              })
+              .drawLayers()
+
+            gX = cx;
+            gY = cy;
+            return
+          }
           if (!!currentData && currentData.status == 1) {
             var data = currentData;
             var activePoint = currentData.activePoint
@@ -215,11 +249,11 @@ export default {
 
 
         $("body").mouseup(function () {
-          // if (!!isDragBg) {
-          //   isDragBg = false
-          //   ///拖动bg
-          //   return
-          // }
+          if (!!isDragBg) {
+            isDragBg = false
+            ///拖动bg
+            return
+          }
 
           if (!!currentData) {
             var activePoint = currentData.activePoint
@@ -264,6 +298,38 @@ export default {
     })
   },
   methods: {
+    _adjuestTranslate(_translateX, _translateY) {
+      if (_translateY > 0) {
+        _translateY = 0
+
+        if (this.imageHeight * scale < this.canvasHeight) {
+          _translateY = (this.canvasHeight - this.imageHeight * scale) / 2.0
+        }
+      }
+
+      if (_translateX > 0) {
+        _translateX = 0
+
+        if (this.imageWidth * scale < this.canvasWidth) {
+          _translateX = (this.canvasWidth - this.imageWidth * scale) / 2.0
+        }
+      }
+
+
+      if (this.canvasWidth - translateX > this.imageWidth * scale) {
+        _translateX = Math.min(this.canvasWidth - this.imageWidth * scale, (this.canvasWidth - this.imageWidth * scale) / 2.0);
+      }
+
+      if (this.canvasHeight - translateY > this.imageHeight * scale) {
+        _translateY = Math.min(this.canvasHeight - this.imageHeight * scale, (this.canvasHeight - this.imageHeight * scale) / 2.0);
+      }
+
+      return {
+        translateX: _translateX,
+        translateY: _translateY
+      }
+
+    },
     _addSmallQuestionBySuperData(superData) {
       currentData.isEdit = false;
       this.edit(currentData)
@@ -367,7 +433,7 @@ export default {
     },
     scalebig() {
       var oscale = scale;
-      scale = 1.5;
+      scale = 1.7;
 
       /// (this.canvasHeight / 2.0 - translateY) / oscale 获取中间点的y坐标
       ///(this.canvasHeight / 2.0 - translateY) / oscale * scale 获取放大后的物理坐标
@@ -376,6 +442,11 @@ export default {
       translateY = -((this.canvasHeight / 2.0 - translateY) / oscale * scale - this.canvasHeight / 2.0)
       var otranslateX = translateX;
       translateX = -((this.canvasWidth / 2.0 - translateX) / oscale * scale - this.canvasWidth / 2.0)
+
+      const xyDict = this._adjuestTranslate(translateX, translateY)
+      translateX = xyDict.translateX
+      translateY = xyDict.translateY
+
       $('canvas')
         ///先进行1.0的缩放还原,不然后续的translateCanvas会有问题,因为translate的是基于scale:1.0计算位置
         .scaleCanvas({
@@ -404,6 +475,11 @@ export default {
       translateY = -((this.canvasHeight / 2.0 - translateY) / oscale * scale - this.canvasHeight / 2.0)
       var otranslateX = translateX;
       translateX = -((this.canvasWidth / 2.0 - translateX) / oscale * scale - this.canvasWidth / 2.0)
+
+      const xyDict = this._adjuestTranslate(translateX, translateY)
+      translateX = xyDict.translateX
+      translateY = xyDict.translateY
+
 
       $('canvas')
         ///先进行1.0的缩放还原,不然后续的translateCanvas会有问题,因为translate的是基于scale:1.0计算位置
