@@ -15,17 +15,19 @@
 </template>
 
 <script>
-import ret from 'bluebird/js/release/util';
-
+import '@/base/jCanvas-extend.js';
 
 ///移动框是否带着孩子框移动
 var togetherMove = true
 var isDragBg = false;
 
 var canvasLeft, canvasTop, gX, gY;
+
+///坐标轴缩放比例
 var scale, orginScale = 1;
-var translateY, orginTranslateY = 0;
-var translateX, orginTranslateX = 0;
+///坐标轴移动
+var translateY = 0;
+var translateX = 0;
 // left = document.getElementById("myCanvas").getBoundingClientRect()
 
 var datas = [
@@ -49,12 +51,13 @@ export default {
       canvasHeight: 800,
       imageWidth: 0,
       imageHeight: 0,
+      translateY: 0,
+      translateX: 0,
       url: ""
     }
   },
   mounted() {
     var that = this;
-
 
     this.$nextTick(function () {
 
@@ -66,9 +69,9 @@ export default {
         that.imageHeight = img.height
 
         orginScale = scale = that.canvasWidth / img.width
-        orginTranslateY = translateY = (that.canvasHeight - img.height * scale) / 2.0
-        orginTranslateX = translateX = 0
-        console.log(orginTranslateY);
+        translateY = (that.canvasHeight - img.height * scale) / 2.0
+        translateX = 0
+        console.log(translateY);
         load()
         img.onload = null;//避免重复加载
       }
@@ -79,7 +82,7 @@ export default {
 
         $('canvas')
           .translateCanvas({
-            translateX: 0, translateY: translateY
+            translateX: translateX, translateY: translateY
           })
           .scaleCanvas({
             scale: scale
@@ -97,22 +100,9 @@ export default {
           },
         });
 
-        // $('canvas').addLayer({
-        //   layer:true,
-        //   type: 'rectangle',
-        //   fillStyle: '#585',
-        //   x: 0, y: -91,
-        //   width: 100, height: 50
-        // })
-
-
-        // that.edit(datas[0])
-
 
         $("canvas").mousedown(function (e) {
           if (!!currentData || !!isDragBg) {
-
-
             canvasLeft = document.getElementById("myCanvas").getBoundingClientRect().left;
             canvasTop = document.getElementById("myCanvas").getBoundingClientRect().top;
             gX = (e.clientX - canvasLeft);
@@ -133,40 +123,12 @@ export default {
             var cx = e.clientX - canvasLeft;
             var cy = e.clientY - canvasTop;
 
-             that.translate(translateX - (gX - cx),translateY - (gY - cy))
-
-            // var otranslateY = translateY;
-            // var otranslateX = translateX;
-
-            // translateY = otranslateY - (gY - cy);
-            // translateX = otranslateX - (gX - cx);
-
-           
-
-
-            // const xyDict = that._adjuestTranslate(translateX, translateY)
-            // translateX = xyDict.translateX
-            // translateY = xyDict.translateY
-
-            // var oscale = scale;
-
-            // $('canvas')
-            //   ///先进行1.0的缩放还原,不然后续的translateCanvas会有问题,因为translate的是基于scale:1.0计算位置
-            //   .scaleCanvas({
-            //     scale: 1 / oscale
-            //   })
-            //   .translateCanvas({
-            //     translateX: translateX - otranslateX, translateY: translateY - otranslateY
-            //   })
-            //   .scaleCanvas({
-            //     scale: scale
-            //   })
-            //   .drawLayers()
-
+            that.translate(translateX - (gX - cx), translateY - (gY - cy))
             gX = cx;
             gY = cy;
             return
           }
+
           if (!!currentData && currentData.status == 1) {
             var data = currentData;
             var activePoint = currentData.activePoint
@@ -194,6 +156,18 @@ export default {
                 }
 
               }
+              // if (!!activePoint.superName) {
+              //   ///不超过父视图
+              //   var point = that._getCoordinatePointByLeftTop(e.clientX - canvasLeft, e.clientY - canvasTop)
+
+              //   // var { x, y, width, height } = $('canvas').getLayer(activePoint.superName)
+              //   if (!that._pointInRect(point, $('canvas').getLayer(activePoint.superName))) {
+              //     ///不在矩形内
+              //     return
+              //   }
+
+              // }
+
               if (currentData.direction == 2) {
                 ///右上角
                 activePoint.width += cx - gX;
@@ -238,6 +212,7 @@ export default {
           }
 
           if (!!currentData) {
+            ///因为进过拉伸会变成height或者width变成负数，需要转换成标准的x,y,width,heigh,然后进行重绘
             var activePoint = currentData.activePoint
             if (activePoint.width < 0) {
               activePoint.x += activePoint.width;
@@ -248,8 +223,10 @@ export default {
               activePoint.y += activePoint.height;
               activePoint.height = -activePoint.height;
             }
+
+
             if (!!currentData.move && !!togetherMove) {
-              ///重新给孩子data赋值x、y
+              ///进过移动后,重新给child的数据模型赋值x、y
               var group = activePoint.groups[activePoint.groups.length - 1]
               var array = $('canvas').getLayerGroup(group)
               for (let index = 0; index < array.length; index++) {
@@ -280,7 +257,43 @@ export default {
     })
   },
   methods: {
-    ///调整Translate
+    ///两个矩形是否相交
+    _checkIntersect(rectA, rectB) {
+      if ((rectA.x + rectA.width < rectB.x) ||
+        (rectA.x > rectB.x + rectB.width) ||
+        (rectA.y + rectA.height < rectB.y) ||
+        (rectA.y > rectB.y + rectB.height)
+      ) {
+        return false
+      }
+      return true
+    },
+    ///判断点是否在矩形内
+    _pointInRect(point, rect) {
+      var { x, y, width, height } = rect
+      if (!((point.x >= x && point.x <= x + width)
+        && (point.y >= y && point.y <= y + height))
+      ) {
+        ///不在矩形内
+        return false
+      }
+      return true
+    },
+    ///根据视图上的距离转成坐标的x,y
+    _getCoordinatePointByLeftTop(left, top) {
+      return {
+        x: (left - translateX) / scale,
+        y: (top - translateY) / scale,
+      }
+    },
+    ///得到中间的点的真实坐标
+    _getCenterPoint() {
+      var x = (this.canvasWidth / 2.0 - translateX) / scale
+      var y = (this.canvasHeight / 2.0 - translateY) / scale
+
+      return { x: x, y: y }
+    },
+    ///调整Translate,使图片展示完整
     _adjuestTranslate(_translateX, _translateY) {
       if (_translateY > 0) {
         _translateY = 0
@@ -348,12 +361,6 @@ export default {
       return null
 
     },
-    _getCenterPoint() {
-      var x = (this.canvasWidth / 2.0 - translateX) / scale
-      var y = (this.canvasHeight / 2.0 - translateY) / scale
-
-      return { x: x, y: y }
-    },
     logcurrent() {
       console.log(currentData);
     },
@@ -415,68 +422,11 @@ export default {
 
     },
     scalebig() {
-      // var oscale = scale;
-      // scale = 1.7;
 
-      // /// (this.canvasHeight / 2.0 - translateY) / oscale 获取中间点的y坐标
-      // ///(this.canvasHeight / 2.0 - translateY) / oscale * scale 获取放大后的物理坐标
-      // /// -((this.canvasHeight / 2.0 - translateY) / oscale * scale - this.canvasHeight / 2.0) 获取translateY 偏移量 (确定最终获取translateY)
-      // var otranslateY = translateY;
-      // translateY = -((this.canvasHeight / 2.0 - translateY) / oscale * scale - this.canvasHeight / 2.0)
-      // var otranslateX = translateX;
-      // translateX = -((this.canvasWidth / 2.0 - translateX) / oscale * scale - this.canvasWidth / 2.0)
-
-      // const xyDict = this._adjuestTranslate(translateX, translateY)
-      // translateX = xyDict.translateX
-      // translateY = xyDict.translateY
-
-      // $('canvas')
-      //   ///先进行1.0的缩放还原,不然后续的translateCanvas会有问题,因为translate的是基于scale:1.0计算位置
-      //   .scaleCanvas({
-      //     scale: 1 / oscale
-      //   })
-      //   .translateCanvas({
-      //     translateX: translateX - otranslateX, translateY: translateY - otranslateY
-      //   })
-      //   .scaleCanvas({
-      //     scale: scale
-      //   })
-      //   .drawLayers()
-
-      this.scale(1.7)
-
-
+      this.scale(1.3)
 
     },
     scalesmall() {
-      // var oscale = scale;
-      // scale = orginScale;
-
-      // var otranslateY = translateY;
-      // /// (this.canvasHeight / 2.0 - translateY) / oscale 获取中间点的y坐标
-      // ///(this.canvasHeight / 2.0 - translateY) / oscale * scale 获取放大后的物理坐标
-      // /// -((this.canvasHeight / 2.0 - translateY) / oscale * scale - this.canvasHeight / 2.0) 获取translateY 偏移量 
-      // translateY = -((this.canvasHeight / 2.0 - translateY) / oscale * scale - this.canvasHeight / 2.0)
-      // var otranslateX = translateX;
-      // translateX = -((this.canvasWidth / 2.0 - translateX) / oscale * scale - this.canvasWidth / 2.0)
-
-      // const xyDict = this._adjuestTranslate(translateX, translateY)
-      // translateX = xyDict.translateX
-      // translateY = xyDict.translateY
-
-
-      // $('canvas')
-      //   ///先进行1.0的缩放还原,不然后续的translateCanvas会有问题,因为translate的是基于scale:1.0计算位置
-      //   .scaleCanvas({
-      //     scale: 1 / oscale
-      //   })
-      //   .translateCanvas({
-      //     translateX: translateX - otranslateX, translateY: translateY - otranslateY
-      //   })
-      //   .scaleCanvas({
-      //     scale: scale
-      //   })
-      //   .drawLayers()
 
       this.scale(orginScale)
 
@@ -548,7 +498,6 @@ export default {
           strokeWidth: 2,
           name: name,
           groups: groups,
-          // source: 'https://projects.calebevans.me/jcanvas/assets/images/fish.jpg',
           x: x, y: y,
           width: width, height: height,
           data: {
@@ -567,13 +516,6 @@ export default {
             currentData.move = true;
 
           },
-          // mousemove: function (layer) {
-
-          // },
-          // mouseup: function (layer) {
-          //   boolmove = false;
-          // }
-
         });
 
         ///绘制4个点
