@@ -39,7 +39,6 @@ var datas = [
   // },
 
 ]
-// var data = { x: 50, y: 50, width: 220, height: 138, groups: ["boxes"], isEdit: true, move: false }
 
 var currentData;
 
@@ -102,22 +101,28 @@ export default {
 
 
         $("canvas").mousedown(function (e) {
-          if (!!currentData || !!isDragBg) {
+          const data = currentData
+          if (!!data || !!isDragBg) {
             canvasLeft = document.getElementById("myCanvas").getBoundingClientRect().left;
             canvasTop = document.getElementById("myCanvas").getBoundingClientRect().top;
             gX = (e.clientX - canvasLeft);
             gY = e.clientY - canvasTop;
 
             if (!isDragBg) {
-              currentData.status = 1;
+              data.status = 1;
               gX /= scale;
               gY /= scale;
+
+            if (!data.superName && data) {
+                
+            }
             }
           }
 
         });
 
         $("canvas").mousemove(function (e) {
+          const data = currentData;
           if (!!isDragBg) {
             ///拖动bg
             var cx = e.clientX - canvasLeft;
@@ -129,16 +134,17 @@ export default {
             return
           }
 
-          if (!!currentData && currentData.status == 1) {
-            var data = currentData;
-            var activePoint = currentData.activePoint
+          if (!!data && data.status == 1) {
+            const tempData = that._tempData(data)
+            const activePoint = data.activePoint
             var cx = e.clientX - canvasLeft;
             var cy = e.clientY - canvasTop;
             cx /= scale;
             cy /= scale;
 
-            function block() {
-              if (currentData.move == true) {
+            var block = function () {
+
+              if (data.move == true) {
                 ///移动
                 activePoint.y += cy - gY;
                 activePoint.x += cx - gX;
@@ -156,45 +162,51 @@ export default {
                 }
 
               }
-              // if (!!activePoint.superName) {
-              //   ///不超过父视图
-              //   var point = that._getCoordinatePointByLeftTop(e.clientX - canvasLeft, e.clientY - canvasTop)
 
-              //   // var { x, y, width, height } = $('canvas').getLayer(activePoint.superName)
-              //   if (!that._pointInRect(point, $('canvas').getLayer(activePoint.superName))) {
-              //     ///不在矩形内
-              //     return
-              //   }
-
-              // }
-
-              if (currentData.direction == 2) {
+              ///正在点击的点
+              var clickPoint;
+              if (data.direction == 2) {
                 ///右上角
                 activePoint.width += cx - gX;
                 activePoint.y += cy - gY;
                 activePoint.height += gY - cy;
-              } else if (currentData.direction == 1) {
+                clickPoint = { x: activePoint.x + activePoint.width, y: activePoint.y }
+              } else if (data.direction == 1) {
                 ///左上角
                 activePoint.x += cx - gX;
                 activePoint.width += gX - cx;
                 activePoint.y += cy - gY;
                 activePoint.height += gY - cy;
-
-              } else if (currentData.direction == 3) {
+                clickPoint = { x: activePoint.x, y: activePoint.y }
+              } else if (data.direction == 3) {
                 ///左下角
                 activePoint.height += cy - gY;
                 activePoint.x += cx - gX;
                 activePoint.width += gX - cx;
-
-              } else if (currentData.direction == 4) {
+                clickPoint = { x: activePoint.x, y: activePoint.y + activePoint.height }
+              } else if (data.direction == 4) {
                 ///右下角
                 activePoint.height += cy - gY;
                 activePoint.width += cx - gX;
+                clickPoint = { x: activePoint.x + activePoint.width, y: activePoint.y + activePoint.height }
+              }
+
+              if (!!activePoint.superName) {
+                ///不超过父视图
+                var point = clickPoint
+                if (!that._pointInRect(point, $('canvas').getLayer(activePoint.superName))) {
+                  ///不在矩形内 activePoint进行还原
+                  activePoint.x = tempData.x
+                  activePoint.y = tempData.y
+                  activePoint.width = tempData.width
+                  activePoint.height = tempData.height
+                }
 
               }
 
               that.edit(data)
             }
+
 
             block()
 
@@ -205,15 +217,17 @@ export default {
 
 
         $("body").mouseup(function () {
+          const data = currentData
           if (!!isDragBg) {
             isDragBg = false
             ///拖动bg
             return
           }
 
-          if (!!currentData) {
+          if (!!data) {
+            
             ///因为进过拉伸会变成height或者width变成负数，需要转换成标准的x,y,width,heigh,然后进行重绘
-            var activePoint = currentData.activePoint
+            var activePoint = data.activePoint
             if (activePoint.width < 0) {
               activePoint.x += activePoint.width;
               activePoint.width = -activePoint.width;
@@ -225,7 +239,7 @@ export default {
             }
 
 
-            if (!!currentData.move && !!togetherMove) {
+            if (!!data.move && !!togetherMove) {
               ///进过移动后,重新给child的数据模型赋值x、y
               var group = activePoint.groups[activePoint.groups.length - 1]
               var array = $('canvas').getLayerGroup(group)
@@ -237,11 +251,11 @@ export default {
 
             }
 
-            that.edit(currentData)
+            that.edit(data)
 
-            currentData.direction = 0;
-            currentData.move = false;
-            currentData.status = 0;
+            data.direction = 0;
+            data.move = false;
+            data.status = 0;
 
           }
 
@@ -257,6 +271,15 @@ export default {
     })
   },
   methods: {
+    _tempData(data) {
+      return {
+        x: data.activePoint.x,
+        y: data.activePoint.y,
+        width: data.activePoint.width,
+        height: data.activePoint.height,
+        direction: data.direction
+      }
+    },
     ///两个矩形是否相交
     _checkIntersect(rectA, rectB) {
       if ((rectA.x + rectA.width < rectB.x) ||
@@ -327,9 +350,10 @@ export default {
 
     },
     _addSmallQuestionBySuperData(superData) {
-      currentData.isEdit = false;
-      this.edit(currentData)
-      // currentData = null
+      var data = currentData
+
+      data.isEdit = false;
+      this.edit(data)
 
       var activePoint = superData.activePoint;
       if (!activePoint) return;
@@ -349,9 +373,10 @@ export default {
       }
       superData.child.push(childData)
 
-      currentData = childData
-      this.edit(currentData)
+      this.edit(childData)
 
+      data = childData
+      currentData = data
     },
     _getDataByName(name) {
       //  return $('canvas').getLayer(name)?.data.data;
@@ -365,53 +390,56 @@ export default {
       console.log(currentData);
     },
     addBig() {
-      if (!!currentData) {
-        currentData.isEdit = false;
-        this.edit(currentData)
-        currentData = null
+      var data = currentData
+      if (!!data) {
+        data.isEdit = false;
+        this.edit(data)
+       
       }
 
       var timestamp = Date.parse(new Date());
       var centerPoint = this._getCenterPoint();
       var point = { x: centerPoint.x, y: centerPoint.y, width: 50, height: 50, groups: ["boxes-child-" + timestamp], name: "mybox-" + timestamp }
-      currentData = {
+      data = {
         points: [
           point
         ],
         status: 0, isEdit: true, move: false, color: "#000", activePoint: point,
         child: []
       }
-      this.edit(currentData)
-      datas.push(currentData)
-
+      this.edit(data)
+      datas.push(data)
+      currentData = data
 
     },
 
     addSmall() {
-      if (!!currentData && !!currentData.child) {
-        this._addSmallQuestionBySuperData(currentData)
-      } else if (!!currentData && currentData.activePoint.superName) {
-        this._addSmallQuestionBySuperData(this._getDataByName(currentData.activePoint.superName))
+      const data = currentData
+      if (!!data && !!data.child) {
+        this._addSmallQuestionBySuperData(data)
+      } else if (!!data && data.activePoint.superName) {
+        this._addSmallQuestionBySuperData(this._getDataByName(data.activePoint.superName))
 
       } else {
         alert("选择一个大题框")
       }
     },
     del() {
-      if (!!currentData) {
-        var activePoint = currentData.activePoint
+      const data = currentData
+      if (!!data) {
+        var activePoint = data.activePoint
         $('canvas').removeLayerGroup(activePoint.groups[activePoint.groups.length - 1]).drawLayers();
         if (!!activePoint.superName) {
           var superData = this._getDataByName(activePoint.superName)
           ///小题
           var s = superData.child
 
-          s.splice(s.indexOf(currentData), 1)
+          s.splice(s.indexOf(data), 1)
           this.edit(superData)
         } else {
           ///大题
           var s = datas
-          s.splice(s.indexOf(currentData), 1)
+          s.splice(s.indexOf(data), 1)
         }
         currentData = null
       }
@@ -504,16 +532,18 @@ export default {
             data: maindata, index: index
           },
           mousedown: function (layer) {
-
-
-            if (!!currentData) {
-              currentData.isEdit = false;
-              that.edit(currentData)
+            
+            var data = currentData
+            if (!!data) {
+              data.isEdit = false;
+              that.edit(data)
             }
-            currentData = layer.data.data;
-            currentData.activePoint = currentData.points[layer.data.index]
-            currentData.isEdit = true;
-            currentData.move = true;
+            data = layer.data.data;
+            data.activePoint = data.points[layer.data.index]
+            data.isEdit = true;
+            data.move = true;
+
+            currentData = data
 
           },
         });
@@ -532,9 +562,11 @@ export default {
               data: maindata, index: index
             },
             mousedown: function (layer) {
-              currentData = layer.data.data;
-              currentData.activePoint = currentData.points[layer.data.index]
-              currentData.direction = 1;
+              var data
+              data = layer.data.data;
+              data.activePoint = data.points[layer.data.index]
+              data.direction = 1;
+              currentData = data
 
             },
           });
@@ -551,9 +583,10 @@ export default {
               data: maindata, index: index
             },
             mousedown: function (layer) {
-              currentData = layer.data.data;
-              currentData.activePoint = currentData.points[layer.data.index]
-              currentData.direction = 2;
+              var data = layer.data.data;
+              data.activePoint = data.points[layer.data.index]
+              data.direction = 2;
+              currentData = data
 
             },
           });
@@ -569,9 +602,10 @@ export default {
               data: maindata, index: index
             },
             mousedown: function (layer) {
-              currentData = layer.data.data;
-              currentData.activePoint = currentData.points[layer.data.index]
-              currentData.direction = 3;
+              var data = layer.data.data;
+              data.activePoint = data.points[layer.data.index]
+              data.direction = 3;
+              currentData = data
 
             },
           });
@@ -587,9 +621,10 @@ export default {
               data: maindata, index: index
             },
             mousedown: function (layer) {
-              currentData = layer.data.data;
-              currentData.activePoint = currentData.points[layer.data.index]
-              currentData.direction = 4;
+              var data = layer.data.data;
+              data.activePoint = data.points[layer.data.index]
+              data.direction = 4;
+              currentData = data
 
             },
           });
