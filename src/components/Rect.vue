@@ -217,6 +217,27 @@ export default {
 
                 }
 
+                ///quadrantPoints进行距离近的排序
+                for (let index = 0; index < quadrant.quadrantPoints.length; index++) {
+                  const quadrantPoints = quadrant.quadrantPoints[index];
+                  if (quadrantPoints.length > 3) {
+                    quadrantPoints.sort(function(rect1, rect2){
+                      var rect1D = Math.min(
+                        Math.abs(immobilityPoint.x - rect1.x),
+                        Math.abs(immobilityPoint.y - rect1.y)
+                      )
+
+                      var rect2D = Math.min(
+                        Math.abs(immobilityPoint.x - rect2.x),
+                        Math.abs(immobilityPoint.y - rect2.y)
+                      )
+
+                      return rect1D - rect2D
+                    }); 
+                    console.log(quadrantPoints);
+                  }
+                }
+
               }
             }
           }
@@ -322,12 +343,15 @@ export default {
                     otherRects = quadrant.quadrantPoints[3]
                   }
 
-                  console.log(otherRects);
+                  // console.log(otherRects);
                   var iscollision = false
                   for (let index = 0; index < otherRects.length; index++) {
                     const otherRect = otherRects[index];
                     iscollision = that._checkIntersect(activePoint, otherRect)
-                    if (!!iscollision) break
+                    if (!!iscollision){
+                      console.log("在点：",index);
+                      break
+                    } 
                   }
 
                   if (!!iscollision) {
