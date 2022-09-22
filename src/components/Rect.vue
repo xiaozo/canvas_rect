@@ -16,9 +16,6 @@
 
 <script>
 import '@/base/jCanvas-extend.js';
-import ret from 'bluebird/js/release/util';
-import variable from 'escope/lib/variable';
-import bool from 'js-yaml/lib/js-yaml/type/bool';
 
 ///移动框是否带着孩子框移动
 var togetherMove = true
@@ -44,13 +41,6 @@ var datas = [
 
 ]
 
-var currentData;
-var quadrant = {
-  immobilityPoint: null,
-  quadrantPoints: [],
-
-};
-
 export default {
   name: 'invoice',
   data() {
@@ -62,6 +52,11 @@ export default {
       translateY: 0,
       translateX: 0,
       url: "",
+      tempQuadrant: {
+        immobilityPoint: null,
+        quadrantPoints: [],
+      },
+      currentData: null
     }
   },
   mounted() {
@@ -110,7 +105,7 @@ export default {
 
 
         $("canvas").mousedown(function (e) {
-          const data = currentData
+          const data = that.currentData
           if (!!data || !!isDragBg) {
             canvasLeft = document.getElementById("myCanvas").getBoundingClientRect().left;
             canvasTop = document.getElementById("myCanvas").getBoundingClientRect().top;
@@ -179,11 +174,14 @@ export default {
                 }
                 var immobilityPoint;
                 var list = datas
-                quadrant = {
+
+                var quadrant = {
                   immobilityPoint: null,
                   quadrantPoints: [[], [], [], []],
 
                 };
+                that.tempQuadrant = quadrant
+
                 if (data.direction == 1) {
                   ///左上角
                   immobilityPoint = { x: activePoint.x + activePoint.width, y: activePoint.y + activePoint.height }
@@ -204,10 +202,6 @@ export default {
                   if (element != data) {
                     for (let index = 0; index < element.points.length; index++) {
                       const rect = element.points[index];
-                      // if (!that._checkIntersect(activePoint, rect)) {
-                      //   ///如果rect与当前的activePoint不相交 加入
-                      //   quadrantClassifyBlock(immobilityPoint, rect, quadrant.quadrantPoints)
-                      // }
                       quadrantClassifyBlock(immobilityPoint, rect, quadrant.quadrantPoints)
 
                     }
@@ -244,7 +238,7 @@ export default {
         });
 
         $("canvas").mousemove(function (e) {
-          const data = currentData;
+          const data = that.currentData;
           if (!!isDragBg) {
             ///拖动bg
             var cx = e.clientX - canvasLeft;
@@ -325,6 +319,7 @@ export default {
                 }
 
               } else {
+                var quadrant = that.tempQuadrant
                 if (!!collisionCheck && !!quadrant) {
                   ///父视图不超过其他视图
                   var immobilityPoint = quadrant.immobilityPoint
@@ -342,12 +337,11 @@ export default {
                     otherRects = quadrant.quadrantPoints[3]
                   }
 
-                  // console.log(otherRects);
                   var iscollision = false
                   for (let index = 0; index < otherRects.length; index++) {
                     const otherRect = otherRects[index];
                     ///如果两个rect本来就相交的就不检测碰撞 that._checkIntersect(oldData, otherRect)
-                    iscollision = !that._checkIntersect(oldData, otherRect) && that._checkIntersect(activePoint, otherRect) 
+                    iscollision = !that._checkIntersect(oldData, otherRect) && that._checkIntersect(activePoint, otherRect)
                     if (!!iscollision) break
                   }
 
@@ -376,8 +370,9 @@ export default {
 
 
         $("body").mouseup(function () {
-          quadrant = null
-          const data = currentData
+          that.tempQuadrant = null
+          const data = that.currentData
+
           if (!!isDragBg) {
             isDragBg = false
             ///拖动bg
@@ -576,7 +571,7 @@ export default {
 
     },
     _addSmallQuestionBySuperData(superData) {
-      var data = currentData
+      var data = this.currentData
 
       data.isEdit = false;
       this.edit(data)
@@ -602,7 +597,7 @@ export default {
       this.edit(childData)
 
       data = childData
-      currentData = data
+      this.currentData = data
     },
     _getDataByName(name) {
       //  return $('canvas').getLayer(name)?.data.data;
@@ -613,10 +608,10 @@ export default {
 
     },
     logcurrent() {
-      console.log(currentData);
+      console.log(this.currentData);
     },
     addBig() {
-      var data = currentData
+      var data = this.currentData
       if (!!data) {
         data.isEdit = false;
         this.edit(data)
@@ -635,12 +630,13 @@ export default {
       }
       this.edit(data)
       datas.push(data)
-      currentData = data
+
+      this.currentData = data
 
     },
 
     addSmall() {
-      const data = currentData
+      const data = this.currentData
       if (!!data && !!data.child) {
         this._addSmallQuestionBySuperData(data)
       } else if (!!data && data.activePoint.superName) {
@@ -651,7 +647,7 @@ export default {
       }
     },
     del() {
-      const data = currentData
+      const data = this.currentData
       if (!!data) {
         var activePoint = data.activePoint
         $('canvas').removeLayerGroup(activePoint.groups[activePoint.groups.length - 1]).drawLayers();
@@ -667,7 +663,7 @@ export default {
           var s = datas
           s.splice(s.indexOf(data), 1)
         }
-        currentData = null
+        this.currentData = null
       }
     },
     cut() {
@@ -759,7 +755,7 @@ export default {
           },
           mousedown: function (layer) {
 
-            var data = currentData
+            var data = that.currentData
             if (!!data) {
               data.isEdit = false;
               that.edit(data)
@@ -769,7 +765,7 @@ export default {
             data.isEdit = true;
             data.move = true;
 
-            currentData = data
+            that.currentData = data
 
           },
         });
@@ -792,7 +788,7 @@ export default {
               data = layer.data.data;
               data.activePoint = data.points[layer.data.index]
               data.direction = 1;
-              currentData = data
+              that.currentData = data
 
             },
           });
@@ -812,7 +808,7 @@ export default {
               var data = layer.data.data;
               data.activePoint = data.points[layer.data.index]
               data.direction = 2;
-              currentData = data
+              that.currentData = data
 
             },
           });
@@ -831,7 +827,7 @@ export default {
               var data = layer.data.data;
               data.activePoint = data.points[layer.data.index]
               data.direction = 3;
-              currentData = data
+              that.currentData = data
 
             },
           });
@@ -850,7 +846,7 @@ export default {
               var data = layer.data.data;
               data.activePoint = data.points[layer.data.index]
               data.direction = 4;
-              currentData = data
+              that.currentData = data
 
             },
           });
