@@ -16,10 +16,14 @@
 
 <script>
 import '@/base/jCanvas-extend.js';
+import ret from 'bluebird/js/release/util';
+import variable from 'escope/lib/variable';
+import bool from 'js-yaml/lib/js-yaml/type/bool';
 
 ///移动框是否带着孩子框移动
 var togetherMove = true
 var isDragBg = false;
+var collisionCheck = true
 
 var canvasLeft, canvasTop, gX, gY;
 
@@ -41,6 +45,11 @@ var datas = [
 ]
 
 var currentData;
+var quadrant = {
+  immobilityPoint: null,
+  quadrantPoints: [],
+
+};
 
 export default {
   name: 'invoice',
@@ -52,7 +61,7 @@ export default {
       imageHeight: 0,
       translateY: 0,
       translateX: 0,
-      url: ""
+      url: "",
     }
   },
   mounted() {
@@ -113,9 +122,102 @@ export default {
               gX /= scale;
               gY /= scale;
 
-            if (!data.superName && data) {
-                
-            }
+              if (!data.superName && data.direction > 0 && !!collisionCheck) {
+                const activePoint = data.activePoint;
+                var quadrantClassifyBlock = function (point, rect, quadrantPoints) {
+                  ///第一 第二
+                  ///第三 第四
+                  var { x, y } = point
+                  var rectX = rect.x;
+                  var rectY = rect.y;
+                  var rectWidth = rect.width;
+                  var rectHeight = rect.height;
+
+                  if (y > rectY + rectHeight) {
+                    ///第一或者第二
+                    if (x <= rectX) {
+                      ///第二
+                      quadrantPoints[1].push(rect)
+                    } else if (x > rectX && x < rectX + rectWidth) {
+                      ///第一 第二
+                      quadrantPoints[0].push(rect)
+                      quadrantPoints[1].push(rect)
+                    } else {
+                      ///第一
+                      quadrantPoints[0].push(rect)
+                    }
+                  } else if (y < rectY) {
+                    ///第三或者第四
+                    if (x <= rectX) {
+                      ///第四
+                      quadrantPoints[3].push(rect)
+                    } else if (x > rectX && x < rectX + rectWidth) {
+                      ///第三 第四
+                      quadrantPoints[2].push(rect)
+                      quadrantPoints[3].push(rect)
+                    } else {
+                      ///第三
+                      quadrantPoints[2].push(rect)
+                    }
+                  } else {
+                    ///1或者2或者3或者4
+                    if (x <= rectX) {
+                      ///第二 第四
+                      quadrantPoints[1].push(rect)
+                      quadrantPoints[3].push(rect)
+                    } else if (x > rectX && x < rectX + rectWidth) {
+
+                      ///第一 第二 第三 第四
+                      quadrantPoints[0].push(rect)
+                      quadrantPoints[1].push(rect)
+                      quadrantPoints[2].push(rect)
+                      quadrantPoints[3].push(rect)
+                    } else {
+                      ///第一 第三
+                      quadrantPoints[0].push(rect)
+                      quadrantPoints[2].push(rect)
+
+                    }
+                  }
+                }
+                var immobilityPoint;
+                var list = datas
+                quadrant = {
+                  immobilityPoint: null,
+                  quadrantPoints: [[], [], [], []],
+
+                };
+                if (data.direction == 1) {
+                  ///左上角
+                  immobilityPoint = { x: activePoint.x + activePoint.width, y: activePoint.y + activePoint.height }
+                } else if (data.direction == 2) {
+                  ///右上角
+                  immobilityPoint = { x: activePoint.x, y: activePoint.y + activePoint.height }
+                } else if (data.direction == 3) {
+                  ///左下角
+                  immobilityPoint = { x: activePoint.x + activePoint.width, y: activePoint.y }
+                } else if (data.direction == 4) {
+                  ///右下角
+                  immobilityPoint = { x: activePoint.x, y: activePoint.y }
+                }
+
+                quadrant.immobilityPoint = immobilityPoint
+                for (let index = 0; index < list.length; index++) {
+                  const element = list[index];
+                  if (element != data) {
+                    for (let index = 0; index < element.points.length; index++) {
+                      const rect = element.points[index];
+                      if (!that._checkIntersect(activePoint,rect)) {
+                        ///如果rect与当前的activePoint不相交 加入
+                        quadrantClassifyBlock(immobilityPoint, rect, quadrant.quadrantPoints)
+                      }
+                     
+                    }
+                  }
+
+                }
+
+              }
             }
           }
 
@@ -202,6 +304,42 @@ export default {
                   activePoint.height = tempData.height
                 }
 
+              } else {
+                if (!!collisionCheck) {
+                  ///父视图不超过其他视图
+                  var immobilityPoint = quadrant.immobilityPoint
+                  var otherRects = [];
+                  if (clickPoint.x <= immobilityPoint.x && clickPoint.y <= immobilityPoint.y) {
+                    ///第一的数组
+                    otherRects = quadrant.quadrantPoints[0]
+                  } else if (clickPoint.x > immobilityPoint.x && clickPoint.y <= immobilityPoint.y) {
+                    ///第二的数组
+                    otherRects = quadrant.quadrantPoints[1]
+                  } else if (clickPoint.x <= immobilityPoint.x && clickPoint.y >= immobilityPoint.y) {
+                    ///第三的数组
+                    otherRects = quadrant.quadrantPoints[2]
+                  } else {
+                    otherRects = quadrant.quadrantPoints[3]
+                  }
+
+                  console.log(otherRects);
+                  var iscollision = false
+                  for (let index = 0; index < otherRects.length; index++) {
+                    const otherRect = otherRects[index];
+                    iscollision = that._checkIntersect(activePoint, otherRect)
+                    if (!!iscollision) break
+                  }
+
+                  if (!!iscollision) {
+                    ///不在矩形内 activePoint进行还原
+                    activePoint.x = tempData.x
+                    activePoint.y = tempData.y
+                    activePoint.width = tempData.width
+                    activePoint.height = tempData.height
+
+                  }
+                }
+
               }
 
               that.edit(data)
@@ -217,6 +355,7 @@ export default {
 
 
         $("body").mouseup(function () {
+          quadrant = null
           const data = currentData
           if (!!isDragBg) {
             isDragBg = false
@@ -225,7 +364,7 @@ export default {
           }
 
           if (!!data) {
-            
+
             ///因为进过拉伸会变成height或者width变成负数，需要转换成标准的x,y,width,heigh,然后进行重绘
             var activePoint = data.activePoint
             if (activePoint.width < 0) {
@@ -280,8 +419,24 @@ export default {
         direction: data.direction
       }
     },
+    _adjuestRectStandard(rect) {
+      var { x, y, width, height } = rect
+      if (width < 0) {
+        x += width;
+        width = -width;
+      }
+
+      if (height < 0) {
+        y += height;
+        height = -height;
+      }
+      return { x: x, y: y, width: width, height: height }
+    },
     ///两个矩形是否相交
     _checkIntersect(rectA, rectB) {
+      rectA = this._adjuestRectStandard(rectA)
+      rectB = this._adjuestRectStandard(rectB)
+
       if ((rectA.x + rectA.width < rectB.x) ||
         (rectA.x > rectB.x + rectB.width) ||
         (rectA.y + rectA.height < rectB.y) ||
@@ -394,7 +549,7 @@ export default {
       if (!!data) {
         data.isEdit = false;
         this.edit(data)
-       
+
       }
 
       var timestamp = Date.parse(new Date());
@@ -532,7 +687,7 @@ export default {
             data: maindata, index: index
           },
           mousedown: function (layer) {
-            
+
             var data = currentData
             if (!!data) {
               data.isEdit = false;
