@@ -324,7 +324,7 @@ export default {
                 }
 
               } else {
-                if (!!collisionCheck) {
+                if (!!collisionCheck && !!quadrant) {
                   ///父视图不超过其他视图
                   var immobilityPoint = quadrant.immobilityPoint
                   var otherRects = [];
