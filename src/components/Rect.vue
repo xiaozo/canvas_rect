@@ -128,10 +128,7 @@ export default {
                   ///第一 第二
                   ///第三 第四
                   var { x, y } = point
-                  var rectX = rect.x;
-                  var rectY = rect.y;
-                  var rectWidth = rect.width;
-                  var rectHeight = rect.height;
+                  var { x: rectX, y: rectY, width: rectWidth, height: rectHeight } = rect
 
                   if (y > rectY + rectHeight) {
                     ///第一或者第二
@@ -207,11 +204,11 @@ export default {
                   if (element != data) {
                     for (let index = 0; index < element.points.length; index++) {
                       const rect = element.points[index];
-                      if (!that._checkIntersect(activePoint,rect)) {
+                      if (!that._checkIntersect(activePoint, rect)) {
                         ///如果rect与当前的activePoint不相交 加入
                         quadrantClassifyBlock(immobilityPoint, rect, quadrant.quadrantPoints)
                       }
-                     
+
                     }
                   }
 
@@ -221,7 +218,7 @@ export default {
                 for (let index = 0; index < quadrant.quadrantPoints.length; index++) {
                   const quadrantPoints = quadrant.quadrantPoints[index];
                   if (quadrantPoints.length > 3) {
-                    quadrantPoints.sort(function(rect1, rect2){
+                    quadrantPoints.sort(function (rect1, rect2) {
                       var rect1D = Math.min(
                         Math.abs(immobilityPoint.x - rect1.x),
                         Math.abs(immobilityPoint.y - rect1.y)
@@ -233,12 +230,13 @@ export default {
                       )
 
                       return rect1D - rect2D
-                    }); 
-                    console.log(quadrantPoints);
+                    });
                   }
                 }
 
               }
+
+
             }
           }
 
@@ -348,10 +346,7 @@ export default {
                   for (let index = 0; index < otherRects.length; index++) {
                     const otherRect = otherRects[index];
                     iscollision = that._checkIntersect(activePoint, otherRect)
-                    if (!!iscollision){
-                      console.log("在点：",index);
-                      break
-                    } 
+                    if (!!iscollision) break
                   }
 
                   if (!!iscollision) {
@@ -405,11 +400,17 @@ export default {
             if (!!data.move && !!togetherMove) {
               ///进过移动后,重新给child的数据模型赋值x、y
               var group = activePoint.groups[activePoint.groups.length - 1]
+
               var array = $('canvas').getLayerGroup(group)
+
               for (let index = 0; index < array.length; index++) {
                 const element = array[index];
-                element.data.data.points[element.data.index].x = element.x;
-                element.data.data.points[element.data.index].y = element.y;
+                if (!!element.name) {
+                  ///有名字才有模型
+                  element.data.data.points[element.data.index].x = element.x;
+                  element.data.data.points[element.data.index].y = element.y;
+                }
+
               }
 
             }
@@ -419,7 +420,7 @@ export default {
             data.direction = 0;
             data.move = false;
             data.status = 0;
-
+            // currentData = null
           }
 
         });
@@ -442,6 +443,50 @@ export default {
         height: data.activePoint.height,
         direction: data.direction
       }
+    },
+    ///计算矩形的距离
+    _minDistanceOfRectangles(rect1, rect2) {
+
+      var min_dist;
+
+      //首先计算两个矩形中心点
+      var C1 = { x: 0, y: 0 },
+        C2 = { x: 0, y: 0 }
+
+      C1.x = rect1.x + (rect1.width / 2);
+      C1.y = rect1.y + (rect1.height / 2);
+      C2.x = rect2.x + (rect2.width / 2);
+      C2.y = rect2.y + (rect2.height / 2);
+
+      // 分别计算两矩形中心点在X轴和Y轴方向的距离
+      var Dx, Dy;
+      Dx = Math.abs(C2.x - C1.x);
+      Dy = Math.abs(C2.y - C1.y);
+
+      //两矩形不相交，在X轴方向有部分重合的两个矩形，最小距离是上矩形的下边线与下矩形的上边线之间的距离
+      if ((Dx < ((rect1.width + rect2.width) / 2)) && (Dy >= ((rect1.height + rect2.height) / 2))) {
+        min_dist = Dy - ((rect1.height + rect2.height) / 2);
+      }
+
+      //两矩形不相交，在Y轴方向有部分重合的两个矩形，最小距离是左矩形的右边线与右矩形的左边线之间的距离
+      else if ((Dx >= ((rect1.width + rect2.width) / 2)) && (Dy < ((rect1.height + rect2.height) / 2))) {
+        min_dist = Dx - ((rect1.width + rect2.width) / 2);
+      }
+
+      //两矩形不相交，在X轴和Y轴方向无重合的两个矩形，最小距离是距离最近的两个顶点之间的距离，
+      // 利用勾股定理，很容易算出这一距离
+      else if ((Dx >= ((rect1.width + rect2.width) / 2)) && (Dy >= ((rect1.height + rect2.height) / 2))) {
+        var delta_x = Dx - ((rect1.width + rect2.width) / 2);
+        var delta_y = Dy - ((rect1.height + rect2.height) / 2);
+        min_dist = Math.sqrt(delta_x * delta_x + delta_y * delta_y);
+      }
+
+      //两矩形相交，最小距离为负值，返回-1
+      else {
+        min_dist = -1;
+      }
+
+      return min_dist;
     },
     _adjuestRectStandard(rect) {
       var { x, y, width, height } = rect
@@ -578,7 +623,7 @@ export default {
 
       var timestamp = Date.parse(new Date());
       var centerPoint = this._getCenterPoint();
-      var point = { x: centerPoint.x, y: centerPoint.y, width: 50, height: 50, groups: ["boxes-child-" + timestamp], name: "mybox-" + timestamp }
+      var point = { x: centerPoint.x, y: centerPoint.y, width: 50, height: 50, groups: ["boxes-" + timestamp], name: "mybox-" + timestamp }
       data = {
         points: [
           point
