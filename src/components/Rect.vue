@@ -204,10 +204,11 @@ export default {
                   if (element != data) {
                     for (let index = 0; index < element.points.length; index++) {
                       const rect = element.points[index];
-                      if (!that._checkIntersect(activePoint, rect)) {
-                        ///如果rect与当前的activePoint不相交 加入
-                        quadrantClassifyBlock(immobilityPoint, rect, quadrant.quadrantPoints)
-                      }
+                      // if (!that._checkIntersect(activePoint, rect)) {
+                      //   ///如果rect与当前的activePoint不相交 加入
+                      //   quadrantClassifyBlock(immobilityPoint, rect, quadrant.quadrantPoints)
+                      // }
+                      quadrantClassifyBlock(immobilityPoint, rect, quadrant.quadrantPoints)
 
                     }
                   }
@@ -256,7 +257,7 @@ export default {
           }
 
           if (!!data && data.status == 1) {
-            const tempData = that._tempData(data)
+            const oldData = that._tempData(data)
             const activePoint = data.activePoint
             var cx = e.clientX - canvasLeft;
             var cy = e.clientY - canvasTop;
@@ -317,10 +318,10 @@ export default {
                 var point = clickPoint
                 if (!that._pointInRect(point, $('canvas').getLayer(activePoint.superName))) {
                   ///不在矩形内 activePoint进行还原
-                  activePoint.x = tempData.x
-                  activePoint.y = tempData.y
-                  activePoint.width = tempData.width
-                  activePoint.height = tempData.height
+                  activePoint.x = oldData.x
+                  activePoint.y = oldData.y
+                  activePoint.width = oldData.width
+                  activePoint.height = oldData.height
                 }
 
               } else {
@@ -345,16 +346,17 @@ export default {
                   var iscollision = false
                   for (let index = 0; index < otherRects.length; index++) {
                     const otherRect = otherRects[index];
-                    iscollision = that._checkIntersect(activePoint, otherRect)
+                    ///如果两个rect本来就相交的就不检测碰撞 that._checkIntersect(oldData, otherRect)
+                    iscollision = !that._checkIntersect(oldData, otherRect) && that._checkIntersect(activePoint, otherRect) 
                     if (!!iscollision) break
                   }
 
                   if (!!iscollision) {
                     ///不在矩形内 activePoint进行还原
-                    activePoint.x = tempData.x
-                    activePoint.y = tempData.y
-                    activePoint.width = tempData.width
-                    activePoint.height = tempData.height
+                    activePoint.x = oldData.x
+                    activePoint.y = oldData.y
+                    activePoint.width = oldData.width
+                    activePoint.height = oldData.height
 
                   }
                 }
