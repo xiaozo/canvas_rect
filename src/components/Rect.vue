@@ -74,7 +74,6 @@ export default {
         orginScale = scale = that.canvasWidth / img.width
         translateY = (that.canvasHeight - img.height * scale) / 2.0
         translateX = 0
-        console.log(translateY);
         load()
         img.onload = null;//避免重复加载
       }
