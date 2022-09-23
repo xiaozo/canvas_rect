@@ -673,12 +673,12 @@ export default {
     },
     scalebig() {
 
-      this.scale(1.3)
+      this.scaleM(1.3)
 
     },
     scalesmall() {
 
-      this.scale(orginScale)
+      this.scaleM(orginScale)
 
     },
     translate(_translateX, _translateY) {
@@ -704,7 +704,7 @@ export default {
         })
         .drawLayers()
     },
-    scale(_scale) {
+    scaleM(_scale) {
       var oscale = scale;
       scale = _scale;
 
