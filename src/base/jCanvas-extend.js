@@ -12,7 +12,7 @@ $.fn.extend({
     this.datas = []
     this.bgUrl = ""
 
-   
+
   },
   _tempData(data) {
     return {
@@ -229,7 +229,6 @@ $.fn.extend({
 
     this.mousedown(function (e) {
       const data = that.currentData
-      const scale = that.scale
       if (!!data || !!isDragBg) {
         const boundingClientRect = that[0].getBoundingClientRect()
         canvasLeft = boundingClientRect.left;
@@ -239,12 +238,12 @@ $.fn.extend({
 
         if (!isDragBg) {
           data.status = 1;
-          gX /= scale;
-          gY /= scale;
+          // gX /= scale;
+          // gY /= scale;
 
           if (!data.superName && data.direction > 0 && !!that.collisionCheck) {
             const activePoint = data.activePoint;
-           
+
             var quadrantClassifyBlock = function (point, rect, quadrantPoints) {
               ///第一 第二
               ///第三 第四
@@ -323,7 +322,7 @@ $.fn.extend({
             }
 
             quadrant.immobilityPoint = immobilityPoint
-           
+
             for (let index = 0; index < list.length; index++) {
               const element = list[index];
               if (element != data) {
@@ -382,6 +381,9 @@ $.fn.extend({
         const activePoint = data.activePoint
         var cx = e.clientX - canvasLeft;
         var cy = e.clientY - canvasTop;
+        ///转成坐标轴上的坐标
+        gX /= scale;
+        gY /= scale;
         cx /= scale;
         cy /= scale;
 
@@ -490,8 +492,8 @@ $.fn.extend({
 
         block()
 
-        gX = cx;
-        gY = cy;
+        gX = cx * scale;
+        gY = cy * scale;
       }
     });
 
