@@ -15,7 +15,7 @@
 </template>
 
 <script>
-import '@/base/jCanvas-extend.js';
+import '@/base/jCanvas/jCanvas-extend.js';
 
 var isDragBg = false;
 // var collisionCheck = true
@@ -43,7 +43,7 @@ export default {
     return {
       canvasWidth: 1000,
       canvasHeight: 800,
-      canvas:null,
+      canvas: null,
       url: "",
     }
   },
@@ -57,17 +57,15 @@ export default {
 
       img.onload = function () {
 
-
-        that.canvas =  $('canvas')
+        that.canvas = $('canvas')
 
         that.canvas.initCanvas({
           canvasWidth: that.canvasWidth,
           canvasHeight: that.canvasHeight,
           imageWidth: img.width,
           imageHeight: img.height,
-          bgUrl:'/static/image1.jpg'
+          bgUrl: '/static/image1.jpg',
         })
-        console.log(that.canvas.datas);
 
         img.onload = null;//避免重复加载
       }

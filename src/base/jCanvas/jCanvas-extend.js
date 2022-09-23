@@ -1,17 +1,29 @@
-var canvasLeft, canvasTop, gX, gY;
-var isDragBg = false;
+
+
+import { DragBgModel, MoveModel, MovePointModel } from './jCanvas-mouseModel.js';
+
+const BG_LAYER = "BG_LAYER"
+const SUBJECT_LAYER = "SUBJECT_LAYER"
+const EDIT_POINT_LAYER1 = "EDIT_POINT_LAYER1"
+const EDIT_POINT_LAYER2 = "EDIT_POINT_LAYER2"
+const EDIT_POINT_LAYER3 = "EDIT_POINT_LAYER3"
+const EDIT_POINT_LAYER4 = "EDIT_POINT_LAYER4"
+
+// var canvasLeft, canvasTop, gX, gY;
+// var isDragBg = false;
+var isDrag = false;
+
 $.fn.extend({
   _initCanvas: function () {
-    this.togetherMove = true
     this.canvasWidth = 0
     this.canvasHeight = 0
     this.imageWidth = 0
     this.imageHeight = 0
     this.togetherMove = true
     this.collisionCheck = true
+    this.mouseModels = [DragBgModel, MoveModel, MovePointModel]
     this.datas = []
     this.bgUrl = ""
-
 
   },
   _tempData(data) {
@@ -20,7 +32,7 @@ $.fn.extend({
       y: data.activePoint.y,
       width: data.activePoint.width,
       height: data.activePoint.height,
-      direction: data.direction
+      // direction: MovePointModel.direction
     }
   },
   ///计算矩形的距离
@@ -180,7 +192,7 @@ $.fn.extend({
       points: [
         childPoint
       ],
-      status: 0, isEdit: true, move: false, color: "#585", activePoint: childPoint,
+      status: 0, isEdit: true, color: "#585", activePoint: childPoint,
 
     }
     superData.child.push(childData)
@@ -219,334 +231,72 @@ $.fn.extend({
       layer: true,
       source: this.bgUrl,
       x: 0, y: 0,
-      mousedown: function (layer) {
-        isDragBg = true
-
+      data: {
+        type: BG_LAYER
       },
     });
+
+    // this.setEventHooks({
+    //   mousedown: function (layer) {
+    //     // code to run whenever a layer is added
+    //     const layerType = layer.data.type;
+    //     if (layerType === BG_LAYER) {
+    //       DragBgModel.isDragBg = true
+    //     } else if (layerType === SUBJECT_LAYER) {
+    //       MoveModel.isMove = true
+    //     } else if (layerType === EDIT_POINT_LAYER1) {
+    //       MovePointModel.direction = 1
+    //     } else if (layerType === EDIT_POINT_LAYER2) {
+    //       MovePointModel.direction = 2
+    //     } else if (layerType === EDIT_POINT_LAYER3) {
+    //       MovePointModel.direction = 3
+    //     } else if (layerType === EDIT_POINT_LAYER4) {
+    //       MovePointModel.direction = 4
+    //     }
+    //   }
+    // });
 
 
 
     this.mousedown(function (e) {
-      const data = that.currentData
-      if (!!data || !!isDragBg) {
-        const boundingClientRect = that[0].getBoundingClientRect()
-        canvasLeft = boundingClientRect.left;
-        canvasTop = boundingClientRect.top;
-        gX = (e.clientX - canvasLeft);
-        gY = e.clientY - canvasTop;
+      isDrag = true;
 
-        if (!isDragBg) {
-          data.status = 1;
-          // gX /= scale;
-          // gY /= scale;
+      const boundingClientRect = that[0].getBoundingClientRect()
+      that.canvasLeft = boundingClientRect.left;
+      that.canvasTop = boundingClientRect.top;
+      that.gX = (e.clientX - that.canvasLeft);
+      that.gY = e.clientY - that.canvasTop;
 
-          if (!data.superName && data.direction > 0 && !!that.collisionCheck) {
-            const activePoint = data.activePoint;
-
-            var quadrantClassifyBlock = function (point, rect, quadrantPoints) {
-              ///第一 第二
-              ///第三 第四
-              var { x, y } = point
-              var { x: rectX, y: rectY, width: rectWidth, height: rectHeight } = rect
-
-              if (y > rectY + rectHeight) {
-                ///第一或者第二
-                if (x <= rectX) {
-                  ///第二
-                  quadrantPoints[1].push(rect)
-                } else if (x > rectX && x < rectX + rectWidth) {
-                  ///第一 第二
-                  quadrantPoints[0].push(rect)
-                  quadrantPoints[1].push(rect)
-                } else {
-                  ///第一
-                  quadrantPoints[0].push(rect)
-                }
-              } else if (y < rectY) {
-                ///第三或者第四
-                if (x <= rectX) {
-                  ///第四
-                  quadrantPoints[3].push(rect)
-                } else if (x > rectX && x < rectX + rectWidth) {
-                  ///第三 第四
-                  quadrantPoints[2].push(rect)
-                  quadrantPoints[3].push(rect)
-                } else {
-                  ///第三
-                  quadrantPoints[2].push(rect)
-                }
-              } else {
-                ///1或者2或者3或者4
-                if (x <= rectX) {
-                  ///第二 第四
-                  quadrantPoints[1].push(rect)
-                  quadrantPoints[3].push(rect)
-                } else if (x > rectX && x < rectX + rectWidth) {
-
-                  ///第一 第二 第三 第四
-                  quadrantPoints[0].push(rect)
-                  quadrantPoints[1].push(rect)
-                  quadrantPoints[2].push(rect)
-                  quadrantPoints[3].push(rect)
-                } else {
-                  ///第一 第三
-                  quadrantPoints[0].push(rect)
-                  quadrantPoints[2].push(rect)
-
-                }
-              }
-            }
-            var immobilityPoint;
-            var list = that.datas
-
-            var quadrant = {
-              immobilityPoint: null,
-              quadrantPoints: [[], [], [], []],
-
-            };
-            that.tempQuadrant = quadrant
-
-            if (data.direction == 1) {
-              ///左上角
-              immobilityPoint = { x: activePoint.x + activePoint.width, y: activePoint.y + activePoint.height }
-            } else if (data.direction == 2) {
-              ///右上角
-              immobilityPoint = { x: activePoint.x, y: activePoint.y + activePoint.height }
-            } else if (data.direction == 3) {
-              ///左下角
-              immobilityPoint = { x: activePoint.x + activePoint.width, y: activePoint.y }
-            } else if (data.direction == 4) {
-              ///右下角
-              immobilityPoint = { x: activePoint.x, y: activePoint.y }
-            }
-
-            quadrant.immobilityPoint = immobilityPoint
-
-            for (let index = 0; index < list.length; index++) {
-              const element = list[index];
-              if (element != data) {
-                for (let index = 0; index < element.points.length; index++) {
-                  const rect = element.points[index];
-                  quadrantClassifyBlock(immobilityPoint, rect, quadrant.quadrantPoints)
-
-                }
-              }
-
-            }
-            ///quadrantPoints进行距离近的排序
-            for (let index = 0; index < quadrant.quadrantPoints.length; index++) {
-              const quadrantPoints = quadrant.quadrantPoints[index];
-              if (quadrantPoints.length > 3) {
-                quadrantPoints.sort(function (rect1, rect2) {
-                  var rect1D = Math.min(
-                    Math.abs(immobilityPoint.x - rect1.x),
-                    Math.abs(immobilityPoint.y - rect1.y)
-                  )
-
-                  var rect2D = Math.min(
-                    Math.abs(immobilityPoint.x - rect2.x),
-                    Math.abs(immobilityPoint.y - rect2.y)
-                  )
-
-                  return rect1D - rect2D
-                });
-              }
-            }
-
-          }
-
-
-        }
+      console.log("www");
+      for (let index = 0; index < that.mouseModels.length; index++) {
+        const element = that.mouseModels[index];
+        if (!!element.mousedown(e, that)) break
       }
 
     });
 
     this.mousemove(function (e) {
-      const data = that.currentData;
-      const scale = that.scale
-      if (!!isDragBg) {
-        ///拖动bg
-        var cx = e.clientX - canvasLeft;
-        var cy = e.clientY - canvasTop;
 
-        that.translate(that.translateX - (gX - cx), that.translateY - (gY - cy))
-        gX = cx;
-        gY = cy;
-        return
+      if (!isDrag) return;
+
+      for (let index = 0; index < that.mouseModels.length; index++) {
+        const element = that.mouseModels[index];
+        if (!!element.mousemove(e, that)) break
       }
 
-      if (!!data && data.status == 1) {
-        const oldData = that._tempData(data)
-        const activePoint = data.activePoint
-        var cx = e.clientX - canvasLeft;
-        var cy = e.clientY - canvasTop;
-        ///转成坐标轴上的坐标
-        gX /= scale;
-        gY /= scale;
-        cx /= scale;
-        cy /= scale;
+      that.gX = e.clientX - that.canvasLeft;
+      that.gY = e.clientY - that.canvasTop;;
 
-        var block = function () {
-
-          if (data.move == true) {
-            ///移动
-            activePoint.y += cy - gY;
-            activePoint.x += cx - gX;
-
-            if (!!that.togetherMove) {
-              ///带着孩子一起移动
-              var group = activePoint.groups[activePoint.groups.length - 1]
-              var xx = cx - gX
-              var yy = cy - gY
-              that.setLayerGroup(group, {
-                x: '+=' + xx,
-                y: '+=' + yy
-              }).drawLayers()
-              return;
-            }
-
-          }
-
-          ///正在点击的点
-          var clickPoint;
-          if (data.direction == 2) {
-            ///右上角
-            activePoint.width += cx - gX;
-            activePoint.y += cy - gY;
-            activePoint.height += gY - cy;
-            clickPoint = { x: activePoint.x + activePoint.width, y: activePoint.y }
-          } else if (data.direction == 1) {
-            ///左上角
-            activePoint.x += cx - gX;
-            activePoint.width += gX - cx;
-            activePoint.y += cy - gY;
-            activePoint.height += gY - cy;
-            clickPoint = { x: activePoint.x, y: activePoint.y }
-          } else if (data.direction == 3) {
-            ///左下角
-            activePoint.height += cy - gY;
-            activePoint.x += cx - gX;
-            activePoint.width += gX - cx;
-            clickPoint = { x: activePoint.x, y: activePoint.y + activePoint.height }
-          } else if (data.direction == 4) {
-            ///右下角
-            activePoint.height += cy - gY;
-            activePoint.width += cx - gX;
-            clickPoint = { x: activePoint.x + activePoint.width, y: activePoint.y + activePoint.height }
-          }
-
-          if (!!activePoint.superName) {
-            ///不超过父视图
-            var point = clickPoint
-            if (!that._pointInRect(point, that.getLayer(activePoint.superName))) {
-              ///不在矩形内 activePoint进行还原
-              activePoint.x = oldData.x
-              activePoint.y = oldData.y
-              activePoint.width = oldData.width
-              activePoint.height = oldData.height
-            }
-
-          } else {
-            var quadrant = that.tempQuadrant
-            if (!!that.collisionCheck && !!quadrant) {
-              ///父视图不超过其他视图
-              var immobilityPoint = quadrant.immobilityPoint
-              var otherRects = [];
-              if (clickPoint.x <= immobilityPoint.x && clickPoint.y <= immobilityPoint.y) {
-                ///第一的数组
-                otherRects = quadrant.quadrantPoints[0]
-              } else if (clickPoint.x > immobilityPoint.x && clickPoint.y <= immobilityPoint.y) {
-                ///第二的数组
-                otherRects = quadrant.quadrantPoints[1]
-              } else if (clickPoint.x <= immobilityPoint.x && clickPoint.y >= immobilityPoint.y) {
-                ///第三的数组
-                otherRects = quadrant.quadrantPoints[2]
-              } else {
-                otherRects = quadrant.quadrantPoints[3]
-              }
-
-              var iscollision = false
-              for (let index = 0; index < otherRects.length; index++) {
-                const otherRect = otherRects[index];
-                ///如果两个rect本来就相交的就不检测碰撞 that._checkIntersect(oldData, otherRect)
-                iscollision = !that._checkIntersect(oldData, otherRect) && that._checkIntersect(activePoint, otherRect)
-                if (!!iscollision) break
-              }
-
-              if (!!iscollision) {
-                ///不在矩形内 activePoint进行还原
-                activePoint.x = oldData.x
-                activePoint.y = oldData.y
-                activePoint.width = oldData.width
-                activePoint.height = oldData.height
-
-              }
-            }
-
-          }
-
-          that.edit(data)
-        }
-
-
-        block()
-
-        gX = cx * scale;
-        gY = cy * scale;
-      }
     });
 
-    $("body").mouseup(function () {
-      that.tempQuadrant = null
-      const data = that.currentData
+    $("body").mouseup(function (e) {
 
-      if (!!isDragBg) {
-        isDragBg = false
-        ///拖动bg
-        return
+      for (let index = 0; index < that.mouseModels.length; index++) {
+        const element = that.mouseModels[index];
+        if (!!element.mouseup(e, that)) break
       }
 
-      if (!!data) {
-
-        ///因为进过拉伸会变成height或者width变成负数，需要转换成标准的x,y,width,heigh,然后进行重绘
-        var activePoint = data.activePoint
-        if (activePoint.width < 0) {
-          activePoint.x += activePoint.width;
-          activePoint.width = -activePoint.width;
-        }
-
-        if (activePoint.height < 0) {
-          activePoint.y += activePoint.height;
-          activePoint.height = -activePoint.height;
-        }
-
-
-        if (!!data.move && !!that.togetherMove) {
-          ///进过移动后,重新给child的数据模型赋值x、y
-          var group = activePoint.groups[activePoint.groups.length - 1]
-
-          var array = that.getLayerGroup(group)
-
-          for (let index = 0; index < array.length; index++) {
-            const element = array[index];
-            if (!!element.name) {
-              ///有名字才有模型
-              element.data.data.points[element.data.index].x = element.x;
-              element.data.data.points[element.data.index].y = element.y;
-            }
-
-          }
-
-        }
-
-        that.edit(data)
-
-        data.direction = 0;
-        data.move = false;
-        data.status = 0;
-        // currentData = null
-      }
+      isDrag = false
 
     });
 
@@ -612,13 +362,9 @@ $.fn.extend({
     var otranslateX = translateX;
     translateX = -((this.canvasWidth / 2.0 - translateX) / oscale * this.scale - this.canvasWidth / 2.0)
 
-    console.log(this.translateX);
-
     const xyDict = this._adjuestTranslate(translateX, translateY)
     translateX = xyDict.translateX
     translateY = xyDict.translateY
-
-    console.log(translateX);
 
     this
       ///先进行1.0的缩放还原,不然后续的translateCanvas会有问题,因为translate的是基于scale:1.0计算位置
@@ -652,7 +398,7 @@ $.fn.extend({
       points: [
         point
       ],
-      status: 0, isEdit: true, move: false, color: "#000", activePoint: point,
+      isEdit: true, color: "#000", activePoint: point,
       child: []
     }
     this.edit(data)
@@ -727,9 +473,11 @@ $.fn.extend({
           data = layer.data.data;
           data.activePoint = data.points[layer.data.index]
           data.isEdit = true;
-          data.move = true;
+          // data.move = true;
+          MoveModel.isMove = true
 
           that.currentData = data
+          // that.edit(data)
 
         },
       });
@@ -751,7 +499,8 @@ $.fn.extend({
             var data
             data = layer.data.data;
             data.activePoint = data.points[layer.data.index]
-            data.direction = 1;
+            console.log("MovePointModel");
+            MovePointModel.direction = 1;
             that.currentData = data
 
           },
@@ -771,7 +520,8 @@ $.fn.extend({
           mousedown: function (layer) {
             var data = layer.data.data;
             data.activePoint = data.points[layer.data.index]
-            data.direction = 2;
+            console.log("MovePointModel");
+            MovePointModel.direction = 2;
             that.currentData = data
 
           },
@@ -788,9 +538,10 @@ $.fn.extend({
             data: maindata, index: index
           },
           mousedown: function (layer) {
+            console.log("MovePointModel");
             var data = layer.data.data;
             data.activePoint = data.points[layer.data.index]
-            data.direction = 3;
+            MovePointModel.direction = 3;
             that.currentData = data
 
           },
@@ -807,9 +558,10 @@ $.fn.extend({
             data: maindata, index: index
           },
           mousedown: function (layer) {
+            console.log("MovePointModel");
             var data = layer.data.data;
             data.activePoint = data.points[layer.data.index]
-            data.direction = 4;
+            MovePointModel.direction = 4;
             that.currentData = data
 
           },
