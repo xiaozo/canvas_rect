@@ -25,7 +25,7 @@ var collisionCheck = true
 var canvasLeft, canvasTop, gX, gY;
 
 ///坐标轴缩放比例
-var scale, orginScale = 1;
+// var scale = 1;
 ///坐标轴移动
 var translateY = 0;
 var translateX = 0;
@@ -56,7 +56,9 @@ export default {
         immobilityPoint: null,
         quadrantPoints: [],
       },
-      currentData: null
+      currentData: null,
+      orginScale:1,
+      scale:1
     }
   },
   mounted() {
@@ -71,8 +73,8 @@ export default {
         that.imageWidth = img.width
         that.imageHeight = img.height
 
-        orginScale = scale = that.canvasWidth / img.width
-        translateY = (that.canvasHeight - img.height * scale) / 2.0
+        that.orginScale = that.scale = that.canvasWidth / img.width
+        translateY = (that.canvasHeight - img.height * that.scale) / 2.0
         translateX = 0
         console.log(translateY);
         load()
@@ -88,7 +90,7 @@ export default {
             translateX: translateX, translateY: translateY
           })
           .scaleCanvas({
-            scale: scale
+            scale: that.scale
           })
 
 
@@ -106,6 +108,7 @@ export default {
 
         $("canvas").mousedown(function (e) {
           const data = that.currentData
+          const scale = that.scale
           if (!!data || !!isDragBg) {
             canvasLeft = document.getElementById("myCanvas").getBoundingClientRect().left;
             canvasTop = document.getElementById("myCanvas").getBoundingClientRect().top;
@@ -239,6 +242,7 @@ export default {
 
         $("canvas").mousemove(function (e) {
           const data = that.currentData;
+          const scale = that.scale
           if (!!isDragBg) {
             ///拖动bg
             var cx = e.clientX - canvasLeft;
@@ -525,6 +529,7 @@ export default {
     },
     ///根据视图上的距离转成坐标的x,y
     _getCoordinatePointByLeftTop(left, top) {
+      const scale = this.scale
       return {
         x: (left - translateX) / scale,
         y: (top - translateY) / scale,
@@ -532,6 +537,7 @@ export default {
     },
     ///得到中间的点的真实坐标
     _getCenterPoint() {
+      const scale = this.scale
       var x = (this.canvasWidth / 2.0 - translateX) / scale
       var y = (this.canvasHeight / 2.0 - translateY) / scale
 
@@ -539,6 +545,7 @@ export default {
     },
     ///调整Translate,使图片展示完整
     _adjuestTranslate(_translateX, _translateY) {
+      const scale = this.scale
       if (_translateY > 0) {
         _translateY = 0
 
@@ -678,10 +685,11 @@ export default {
     },
     scalesmall() {
 
-      this.scaleM(orginScale)
+      this.scaleM(this.orginScale)
 
     },
     translate(_translateX, _translateY) {
+      const scale = this.scale
       var otranslateY = translateY;
       var otranslateX = translateX;
 
@@ -705,16 +713,16 @@ export default {
         .drawLayers()
     },
     scaleM(_scale) {
-      var oscale = scale;
-      scale = _scale;
+      var oscale =this.scale;
+      this.scale = _scale;
 
       /// (this.canvasHeight / 2.0 - translateY) / oscale 获取中间点的y坐标
       ///(this.canvasHeight / 2.0 - translateY) / oscale * scale 获取放大后的物理坐标
       /// -((this.canvasHeight / 2.0 - translateY) / oscale * scale - this.canvasHeight / 2.0) 获取translateY 偏移量 (确定最终获取translateY)
       var otranslateY = translateY;
-      translateY = -((this.canvasHeight / 2.0 - translateY) / oscale * scale - this.canvasHeight / 2.0)
+      translateY = -((this.canvasHeight / 2.0 - translateY) / oscale * this.scale - this.canvasHeight / 2.0)
       var otranslateX = translateX;
-      translateX = -((this.canvasWidth / 2.0 - translateX) / oscale * scale - this.canvasWidth / 2.0)
+      translateX = -((this.canvasWidth / 2.0 - translateX) / oscale * this.scale - this.canvasWidth / 2.0)
 
       const xyDict = this._adjuestTranslate(translateX, translateY)
       translateX = xyDict.translateX
@@ -729,7 +737,7 @@ export default {
           translateX: translateX - otranslateX, translateY: translateY - otranslateY
         })
         .scaleCanvas({
-          scale: scale
+          scale: this.scale
         })
         .drawLayers()
     },
