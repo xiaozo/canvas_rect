@@ -234,7 +234,7 @@ $.fn.extend({
       data: {
         type: BG_LAYER
       },
-      mousedown:function(){
+      mousedown:function(layer){
       }
     });
 
