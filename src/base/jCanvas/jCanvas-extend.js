@@ -235,7 +235,6 @@ $.fn.extend({
         type: BG_LAYER
       },
       mousedown:function(){
-
       }
     });
 

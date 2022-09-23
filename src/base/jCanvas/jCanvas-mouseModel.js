@@ -3,7 +3,6 @@ var DragBgModel = {
     isDragBg: false,
 
     mousedown(e, canvas) {
-        console.log(this.isDragBg);
         return !!this.isDragBg
     },
     mousemove(e, canvas) {
@@ -31,7 +30,6 @@ var DragBgModel = {
 var MoveModel = {
     isMove: false,
     mousedown(e, canvas) {
-        console.log(this.isMove);
         return !!this.isMove
     },
     mousemove(e, canvas) {
@@ -114,7 +112,6 @@ var MovePointModel = {
     mousedown(e, canvas) {
         const data = canvas.currentData;
         const direction = this.direction
-        console.log(direction);
         if (!!data && direction > 0) {
             if (!data.superName && !!canvas.collisionCheck) {
                 const activePoint = data.activePoint;
@@ -197,7 +194,6 @@ var MovePointModel = {
                 }
 
                 quadrant.immobilityPoint = immobilityPoint
-                console.log("immobilityPointimmobilityPoint");
 
                 for (let index = 0; index < list.length; index++) {
                     const element = list[index];
@@ -288,7 +284,6 @@ var MovePointModel = {
             if (!!activePoint.superName) {
                 ///不超过父视图
                 var point = clickPoint
-                console.log(clickPoint);
                 if (!canvas._pointInRect(point, canvas.getLayer(activePoint.superName))) {
                     ///不在矩形内 activePoint进行还原
                     activePoint.x = oldData.x
@@ -300,7 +295,6 @@ var MovePointModel = {
             } else {
                 var quadrant = this.tempQuadrant
                 if (!!canvas.collisionCheck && !!quadrant) {
-                    console.log(clickPoint);
                     ///父视图不超过其他视图
                     var immobilityPoint = quadrant.immobilityPoint
                     var otherRects = [];
