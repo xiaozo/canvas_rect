@@ -335,8 +335,6 @@ $.fn.extend({
               }
 
             }
-
-            console.log(that.tempQuadrant);
             ///quadrantPoints进行距离近的排序
             for (let index = 0; index < quadrant.quadrantPoints.length; index++) {
               const quadrantPoints = quadrant.quadrantPoints[index];
