@@ -234,27 +234,30 @@ $.fn.extend({
       data: {
         type: BG_LAYER
       },
+      mousedown:function(){
+
+      }
     });
 
-    // this.setEventHooks({
-    //   mousedown: function (layer) {
-    //     // code to run whenever a layer is added
-    //     const layerType = layer.data.type;
-    //     if (layerType === BG_LAYER) {
-    //       DragBgModel.isDragBg = true
-    //     } else if (layerType === SUBJECT_LAYER) {
-    //       MoveModel.isMove = true
-    //     } else if (layerType === EDIT_POINT_LAYER1) {
-    //       MovePointModel.direction = 1
-    //     } else if (layerType === EDIT_POINT_LAYER2) {
-    //       MovePointModel.direction = 2
-    //     } else if (layerType === EDIT_POINT_LAYER3) {
-    //       MovePointModel.direction = 3
-    //     } else if (layerType === EDIT_POINT_LAYER4) {
-    //       MovePointModel.direction = 4
-    //     }
-    //   }
-    // });
+    this.setEventHooks({
+      mousedown: function (layer) {
+        // code to run whenever a layer is added
+        const layerType = layer.data.type;
+        if (layerType === BG_LAYER) {
+          DragBgModel.isDragBg = true
+        } else if (layerType === SUBJECT_LAYER) {
+          MoveModel.isMove = true
+        } else if (layerType === EDIT_POINT_LAYER1) {
+          MovePointModel.direction = 1
+        } else if (layerType === EDIT_POINT_LAYER2) {
+          MovePointModel.direction = 2
+        } else if (layerType === EDIT_POINT_LAYER3) {
+          MovePointModel.direction = 3
+        } else if (layerType === EDIT_POINT_LAYER4) {
+          MovePointModel.direction = 4
+        }
+      }
+    });
 
 
 
@@ -267,7 +270,6 @@ $.fn.extend({
       that.gX = (e.clientX - that.canvasLeft);
       that.gY = e.clientY - that.canvasTop;
 
-      console.log("www");
       for (let index = 0; index < that.mouseModels.length; index++) {
         const element = that.mouseModels[index];
         if (!!element.mousedown(e, that)) break
@@ -461,7 +463,7 @@ $.fn.extend({
         x: x, y: y,
         width: width, height: height,
         data: {
-          data: maindata, index: index
+          data: maindata, index: index,type:SUBJECT_LAYER
         },
         mousedown: function (layer) {
 
@@ -473,18 +475,16 @@ $.fn.extend({
           data = layer.data.data;
           data.activePoint = data.points[layer.data.index]
           data.isEdit = true;
-          // data.move = true;
-          MoveModel.isMove = true
+          // MoveModel.isMove = true
 
           that.currentData = data
-          // that.edit(data)
+          that.edit(data)
 
         },
       });
 
       ///绘制4个点
       if (maindata.isEdit == true) {
-        // console.log(name);
         ///左上角
         this.drawArc({
           layer: true,
@@ -493,7 +493,7 @@ $.fn.extend({
           x: x - 6, y: y - 6,
           radius: 6,
           data: {
-            data: maindata, index: index
+            data: maindata, index: index,type:EDIT_POINT_LAYER1
           },
           mousedown: function (layer) {
             var data
@@ -515,13 +515,11 @@ $.fn.extend({
           x: x + width - 6, y: y - 6,
           radius: 6,
           data: {
-            data: maindata, index: index
+            data: maindata, index: index,type:EDIT_POINT_LAYER2
           },
           mousedown: function (layer) {
             var data = layer.data.data;
             data.activePoint = data.points[layer.data.index]
-            console.log("MovePointModel");
-            MovePointModel.direction = 2;
             that.currentData = data
 
           },
@@ -535,13 +533,11 @@ $.fn.extend({
           x: x - 6, y: y + height - 6,
           radius: 6,
           data: {
-            data: maindata, index: index
+            data: maindata, index: index,type:EDIT_POINT_LAYER3
           },
           mousedown: function (layer) {
-            console.log("MovePointModel");
             var data = layer.data.data;
             data.activePoint = data.points[layer.data.index]
-            MovePointModel.direction = 3;
             that.currentData = data
 
           },
@@ -555,13 +551,11 @@ $.fn.extend({
           x: x + width - 6, y: y + height - 6,
           radius: 6,
           data: {
-            data: maindata, index: index
+            data: maindata, index: index,type:EDIT_POINT_LAYER4
           },
           mousedown: function (layer) {
-            console.log("MovePointModel");
             var data = layer.data.data;
             data.activePoint = data.points[layer.data.index]
-            MovePointModel.direction = 4;
             that.currentData = data
 
           },
