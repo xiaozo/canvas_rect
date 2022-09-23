@@ -27,11 +27,9 @@ var canvasLeft, canvasTop, gX, gY;
 ///坐标轴缩放比例
 // var scale = 1;
 ///坐标轴移动
-var translateY = 0;
-var translateX = 0;
 // left = document.getElementById("myCanvas").getBoundingClientRect()
 
-var datas = [
+/// datas = [
   // {
   //   x: 50, y: 50, width: 220, height: 138, groups: ["boxes"], status: 0, isEdit: false, move: false, name: "mybox", color: "#000",
   //   child: [
@@ -39,12 +37,13 @@ var datas = [
   //   ]
   // },
 
-]
+// ]
 
 export default {
   name: 'invoice',
   data() {
     return {
+      datas:[],
       canvasWidth: 1000,
       canvasHeight: 800,
       imageWidth: 0,
@@ -57,8 +56,8 @@ export default {
         quadrantPoints: [],
       },
       currentData: null,
-      orginScale:1,
-      scale:1
+      orginScale: 1,
+      scale: 1
     }
   },
   mounted() {
@@ -74,9 +73,9 @@ export default {
         that.imageHeight = img.height
 
         that.orginScale = that.scale = that.canvasWidth / img.width
-        translateY = (that.canvasHeight - img.height * that.scale) / 2.0
-        translateX = 0
-        console.log(translateY);
+        that.translateY = (that.canvasHeight - img.height * that.scale) / 2.0
+        that.translateX = 0
+        console.log(that.translateY);
         load()
         img.onload = null;//避免重复加载
       }
@@ -87,7 +86,7 @@ export default {
 
         $('canvas')
           .translateCanvas({
-            translateX: translateX, translateY: translateY
+            translateX: that.translateX, translateY: that.translateY
           })
           .scaleCanvas({
             scale: that.scale
@@ -110,8 +109,9 @@ export default {
           const data = that.currentData
           const scale = that.scale
           if (!!data || !!isDragBg) {
-            canvasLeft = document.getElementById("myCanvas").getBoundingClientRect().left;
-            canvasTop = document.getElementById("myCanvas").getBoundingClientRect().top;
+            const boundingClientRect = $('canvas')[0].getBoundingClientRect()
+            canvasLeft = boundingClientRect.left;
+            canvasTop = boundingClientRect.top;
             gX = (e.clientX - canvasLeft);
             gY = e.clientY - canvasTop;
 
@@ -176,7 +176,7 @@ export default {
                   }
                 }
                 var immobilityPoint;
-                var list = datas
+                var list = that.datas
 
                 var quadrant = {
                   immobilityPoint: null,
@@ -248,7 +248,7 @@ export default {
             var cx = e.clientX - canvasLeft;
             var cy = e.clientY - canvasTop;
 
-            that.translate(translateX - (gX - cx), translateY - (gY - cy))
+            that.translate(that.translateX - (gX - cx), that.translateY - (gY - cy))
             gX = cx;
             gY = cy;
             return
@@ -530,6 +530,8 @@ export default {
     ///根据视图上的距离转成坐标的x,y
     _getCoordinatePointByLeftTop(left, top) {
       const scale = this.scale
+      const translateX = this.translateX
+      const translateY = this.translateY
       return {
         x: (left - translateX) / scale,
         y: (top - translateY) / scale,
@@ -538,6 +540,9 @@ export default {
     ///得到中间的点的真实坐标
     _getCenterPoint() {
       const scale = this.scale
+      const translateX = this.translateX
+      const translateY = this.translateY
+
       var x = (this.canvasWidth / 2.0 - translateX) / scale
       var y = (this.canvasHeight / 2.0 - translateY) / scale
 
@@ -636,7 +641,7 @@ export default {
         child: []
       }
       this.edit(data)
-      datas.push(data)
+      this.datas.push(data)
 
       this.currentData = data
 
@@ -667,14 +672,14 @@ export default {
           this.edit(superData)
         } else {
           ///大题
-          var s = datas
+          var s = this.datas
           s.splice(s.indexOf(data), 1)
         }
         this.currentData = null
       }
     },
     cut() {
-      console.log(datas);
+      console.log(this.datas);
       this.url = $('canvas').getCanvasImage('png')
 
     },
@@ -690,6 +695,9 @@ export default {
     },
     translate(_translateX, _translateY) {
       const scale = this.scale
+      var translateX = this.translateX
+      var translateY = this.translateY
+
       var otranslateY = translateY;
       var otranslateX = translateX;
 
@@ -711,9 +719,15 @@ export default {
           scale: scale
         })
         .drawLayers()
+
+      this.translateX = translateX
+      this.translateY = translateY
     },
     scaleM(_scale) {
-      var oscale =this.scale;
+      var translateX = this.translateX
+      var translateY = this.translateY
+
+      var oscale = this.scale;
       this.scale = _scale;
 
       /// (this.canvasHeight / 2.0 - translateY) / oscale 获取中间点的y坐标
@@ -740,6 +754,9 @@ export default {
           scale: this.scale
         })
         .drawLayers()
+
+      this.translateX = translateX
+      this.translateY = translateY
     },
     edit(maindata) {
       var that = this;
