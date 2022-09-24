@@ -38,7 +38,7 @@ var canvasLeft, canvasTop, gX, gY;
 // ]
 
 export default {
-  name: 'rect',
+  name: 'Rect1',
   data() {
     return {
       canvasWidth: 1000,
