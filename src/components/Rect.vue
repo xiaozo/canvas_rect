@@ -17,26 +17,6 @@
 <script>
 import '@/base/jCanvas/jCanvas-extend.js';
 
-var isDragBg = false;
-// var collisionCheck = true
-
-var canvasLeft, canvasTop, gX, gY;
-
-///坐标轴缩放比例
-// var scale = 1;
-///坐标轴移动
-// left = document.getElementById("myCanvas").getBoundingClientRect()
-
-/// datas = [
-// {
-//   x: 50, y: 50, width: 220, height: 138, groups: ["boxes"], status: 0, isEdit: false, move: false, name: "mybox", color: "#000",
-//   child: [
-//     { x: 60, y: 70, width: 50, height: 60, groups: ["boxes", "boxes-child1"], status: 0, isEdit: false, move: false, name: "mybox-c1", color: "#585" },
-//   ]
-// },
-
-// ]
-
 export default {
   name: 'Rect1',
   data() {
