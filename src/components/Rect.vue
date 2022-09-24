@@ -38,7 +38,7 @@ var canvasLeft, canvasTop, gX, gY;
 // ]
 
 export default {
-  name: 'invoice',
+  name: 'rect',
   data() {
     return {
       canvasWidth: 1000,

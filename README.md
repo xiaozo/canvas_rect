@@ -1,6 +1,7 @@
 # vue-new
 
-> A Vue.js project
+> canvas_rect
+
 
 ## Build Setup
 
