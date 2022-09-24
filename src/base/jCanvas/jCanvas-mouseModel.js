@@ -294,7 +294,7 @@ var MovePointModel = {
                         ///不超过父视图
                         var point = clickPoint
                         if (!canvas._pointInRect(point, maxRect)) {
-                            ///不在矩形内 activePoint进行还原
+                            ///超过父视图 activePoint进行还原
                             activePoint.x = oldData.x
                             activePoint.y = oldData.y
                             activePoint.width = oldData.width
@@ -313,7 +313,7 @@ var MovePointModel = {
                             activePoint.y + activePoint.height < minRect.y + minRect.height ||
                             activePoint.x + activePoint.width < minRect.x + minRect.width
                         ) {
-                            ///不在矩形内 activePoint进行还原
+                            ///在子视图内 activePoint进行还原
                             activePoint.x = oldData.x
                             activePoint.y = oldData.y
                             activePoint.width = oldData.width
