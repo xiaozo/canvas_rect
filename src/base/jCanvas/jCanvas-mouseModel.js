@@ -109,11 +109,14 @@ var MoveModel = {
 var MovePointModel = {
     direction: 0,
     tempQuadrant: [],
+    minRect: null,
+    maxRect: null,
     mousedown(e, canvas) {
         const data = canvas.currentData;
         const direction = this.direction
         if (!!data && direction > 0) {
-            if (!data.superName && !!canvas.collisionCheck) {
+            // console.log(canvas._getSuperChildsByData(data),data);
+            if (!!canvas.collisionCheck) {
                 const activePoint = data.activePoint;
 
                 var quadrantClassifyBlock = function (point, rect, quadrantPoints) {
@@ -171,7 +174,7 @@ var MovePointModel = {
                 }
 
                 var immobilityPoint;
-                var list = canvas.datas
+                var list = canvas._getSuperChildsByData(data)
                 var quadrant = {
                     immobilityPoint: null,
                     quadrantPoints: [[], [], [], []],
@@ -200,7 +203,11 @@ var MovePointModel = {
                     if (element != data) {
                         for (let index = 0; index < element.points.length; index++) {
                             const rect = element.points[index];
-                            quadrantClassifyBlock(immobilityPoint, rect, quadrant.quadrantPoints)
+                            if (rect.superName === activePoint.superName) {
+                                ///只加入同个父类的
+                                quadrantClassifyBlock(immobilityPoint, rect, quadrant.quadrantPoints)
+                            }
+
 
                         }
                     }
@@ -281,55 +288,78 @@ var MovePointModel = {
                 clickPoint = { x: activePoint.x + activePoint.width, y: activePoint.y + activePoint.height }
             }
 
-            if (!!activePoint.superName) {
-                ///不超过父视图
-                var point = clickPoint
-                if (!canvas._pointInRect(point, canvas.getLayer(activePoint.superName))) {
-                    ///不在矩形内 activePoint进行还原
-                    activePoint.x = oldData.x
-                    activePoint.y = oldData.y
-                    activePoint.width = oldData.width
-                    activePoint.height = oldData.height
+            const collisionBlock = function (minRect,maxRect,quadrant) {
+                if (!!canvas.collisionCheck) {
+                    if (!!maxRect) {
+                        ///不超过父视图
+                        var point = clickPoint
+                        if (!canvas._pointInRect(point, maxRect)) {
+                            ///不在矩形内 activePoint进行还原
+                            activePoint.x = oldData.x
+                            activePoint.y = oldData.y
+                            activePoint.width = oldData.width
+                            activePoint.height = oldData.height
+                            return
+                        }
+
+                    }
+
+                    if (!!minRect) {
+                        ///不允许在子视图内
+                        var point = clickPoint
+                        if (
+                            activePoint.x > minRect.x ||
+                            activePoint.y > minRect.y ||
+                            activePoint.y + activePoint.height < minRect.y + minRect.height ||
+                            activePoint.x + activePoint.width < minRect.x + minRect.width
+                        ) {
+                            ///不在矩形内 activePoint进行还原
+                            activePoint.x = oldData.x
+                            activePoint.y = oldData.y
+                            activePoint.width = oldData.width
+                            activePoint.height = oldData.height
+                            return
+                        }
+                    }
+
+                    if (!!quadrant) {
+                        ///父视图不超过其他视图
+                        var immobilityPoint = quadrant.immobilityPoint
+                        var otherRects = [];
+                        if (clickPoint.x <= immobilityPoint.x && clickPoint.y <= immobilityPoint.y) {
+                            ///第一的数组
+                            otherRects = quadrant.quadrantPoints[0]
+                        } else if (clickPoint.x > immobilityPoint.x && clickPoint.y <= immobilityPoint.y) {
+                            ///第二的数组
+                            otherRects = quadrant.quadrantPoints[1]
+                        } else if (clickPoint.x <= immobilityPoint.x && clickPoint.y >= immobilityPoint.y) {
+                            ///第三的数组
+                            otherRects = quadrant.quadrantPoints[2]
+                        } else {
+                            otherRects = quadrant.quadrantPoints[3]
+                        }
+
+                        var iscollision = false
+                        for (let index = 0; index < otherRects.length; index++) {
+                            const otherRect = otherRects[index];
+                            ///如果两个rect本来就相交的就不检测碰撞 canvas._checkIntersect(oldData, otherRect)
+                            iscollision = !canvas._checkIntersect(oldData, otherRect) && canvas._checkIntersect(activePoint, otherRect)
+                            if (!!iscollision) break
+                        }
+
+                        if (!!iscollision) {
+                            ///不在矩形内 activePoint进行还原
+                            activePoint.x = oldData.x
+                            activePoint.y = oldData.y
+                            activePoint.width = oldData.width
+                            activePoint.height = oldData.height
+
+                        }
+                    }
                 }
-
-            } else {
-                var quadrant = this.tempQuadrant
-                if (!!canvas.collisionCheck && !!quadrant) {
-                    ///父视图不超过其他视图
-                    var immobilityPoint = quadrant.immobilityPoint
-                    var otherRects = [];
-                    if (clickPoint.x <= immobilityPoint.x && clickPoint.y <= immobilityPoint.y) {
-                        ///第一的数组
-                        otherRects = quadrant.quadrantPoints[0]
-                    } else if (clickPoint.x > immobilityPoint.x && clickPoint.y <= immobilityPoint.y) {
-                        ///第二的数组
-                        otherRects = quadrant.quadrantPoints[1]
-                    } else if (clickPoint.x <= immobilityPoint.x && clickPoint.y >= immobilityPoint.y) {
-                        ///第三的数组
-                        otherRects = quadrant.quadrantPoints[2]
-                    } else {
-                        otherRects = quadrant.quadrantPoints[3]
-                    }
-
-                    var iscollision = false
-                    for (let index = 0; index < otherRects.length; index++) {
-                        const otherRect = otherRects[index];
-                        ///如果两个rect本来就相交的就不检测碰撞 canvas._checkIntersect(oldData, otherRect)
-                        iscollision = !canvas._checkIntersect(oldData, otherRect) && canvas._checkIntersect(activePoint, otherRect)
-                        if (!!iscollision) break
-                    }
-
-                    if (!!iscollision) {
-                        ///不在矩形内 activePoint进行还原
-                        activePoint.x = oldData.x
-                        activePoint.y = oldData.y
-                        activePoint.width = oldData.width
-                        activePoint.height = oldData.height
-
-                    }
-                }
-
             }
+
+            collisionBlock(this.minRect,this.maxRect,this.tempQuadrant);
 
             canvas.edit(data)
 
@@ -356,7 +386,10 @@ var MovePointModel = {
             canvas.edit(data)
 
             this.tempQuadrant = null
+            this.maxRect = null
+            this.minRect = null
             this.direction = 0
+            
         }
 
         return false

@@ -118,6 +118,30 @@ $.fn.extend({
     }
     return true
   },
+  ///根据多个rect获取最大的rect范围
+  _maxRectByRects(rects) {
+    if (rects.length == 0) {
+      return null
+    }
+
+    var [x, y, maxX, maxY] =
+      [
+        rects[0].x,
+        rects[0].y,
+        rects[0].x + rects[0].width,
+        rects[0].y + rects[0].height
+      ];
+
+    for (let index = 0; index < rects.length; index++) {
+      const rect = rects[index];
+      x = Math.min(x, rect.x)
+      y = Math.min(y, rect.y)
+      maxX = Math.max(maxX, rect.x + rect.width)
+      maxY = Math.max(maxY, rect.y + rect.height)
+    }
+
+    return { x: x, y: y, width: maxX - x, height: maxY - y }
+  },
   ///根据视图上的距离转成坐标的x,y
   _getCoordinatePointByLeftTop(left, top) {
     const scale = this.scale
@@ -210,6 +234,29 @@ $.fn.extend({
     return null
 
   },
+  _getSuperChildsByData(data) {
+    const activePoint = data.activePoint;
+    if (!!activePoint.superName) {
+      return this._getDataByName(activePoint.superName).child
+    }
+    return this.datas
+
+  },
+  _getActiveChildPointsByData(data) {
+    const activePoint = data.activePoint;
+    const childs = [];
+    for (let index = 0; index < data.child.length; index++) {
+      const element = data.child[index];
+      for (let j = 0; j < element.points.length; j++) {
+        const point = element.points[j];
+        if (point.superName === activePoint.name) {
+          childs.push(point)
+        }
+      }
+    }
+
+    return childs
+  },
   _canvas_load: function () {
     var that = this;
     that.orginScale = that.scale = that.canvasWidth / that.imageWidth
@@ -230,11 +277,12 @@ $.fn.extend({
     this.drawImage({
       layer: true,
       source: this.bgUrl,
+      name: "bgName",
       x: 0, y: 0,
       data: {
         type: BG_LAYER
       },
-      mousedown:function(layer){
+      mousedown: function (layer) {
       }
     });
 
@@ -246,14 +294,28 @@ $.fn.extend({
           DragBgModel.isDragBg = true
         } else if (layerType === SUBJECT_LAYER) {
           MoveModel.isMove = true
-        } else if (layerType === EDIT_POINT_LAYER1) {
-          MovePointModel.direction = 1
-        } else if (layerType === EDIT_POINT_LAYER2) {
-          MovePointModel.direction = 2
-        } else if (layerType === EDIT_POINT_LAYER3) {
-          MovePointModel.direction = 3
-        } else if (layerType === EDIT_POINT_LAYER4) {
-          MovePointModel.direction = 4
+        } else {
+          const data = layer.data.data;
+          const activePoint = data.activePoint
+          if (layerType === EDIT_POINT_LAYER1) {
+            MovePointModel.direction = 1
+          } else if (layerType === EDIT_POINT_LAYER2) {
+            MovePointModel.direction = 2
+          } else if (layerType === EDIT_POINT_LAYER3) {
+            MovePointModel.direction = 3
+          } else if (layerType === EDIT_POINT_LAYER4) {
+            MovePointModel.direction = 4
+          }
+
+          if (!!activePoint.superName) {
+            ///子题目
+            MovePointModel.maxRect = that.getLayer(activePoint.superName)
+          } else {
+            ///最外层题目 是图片的rect
+            MovePointModel.maxRect = that.getLayer('bgName')
+            MovePointModel.minRect = that._maxRectByRects(that._getActiveChildPointsByData(data))
+
+          }
         }
       }
     });
@@ -290,7 +352,7 @@ $.fn.extend({
 
     });
 
-    $("body").mouseup(function (e) {
+    $("html").mouseup(function (e) {
 
       for (let index = 0; index < that.mouseModels.length; index++) {
         const element = that.mouseModels[index];
@@ -298,7 +360,6 @@ $.fn.extend({
       }
 
       isDrag = false
-
     });
 
 
@@ -462,7 +523,7 @@ $.fn.extend({
         x: x, y: y,
         width: width, height: height,
         data: {
-          data: maindata, index: index,type:SUBJECT_LAYER
+          data: maindata, index: index, type: SUBJECT_LAYER
         },
         mousedown: function (layer) {
 
@@ -492,14 +553,12 @@ $.fn.extend({
           x: x - 6, y: y - 6,
           radius: 6,
           data: {
-            data: maindata, index: index,type:EDIT_POINT_LAYER1
+            data: maindata, index: index, type: EDIT_POINT_LAYER1
           },
           mousedown: function (layer) {
             var data
             data = layer.data.data;
             data.activePoint = data.points[layer.data.index]
-            console.log("MovePointModel");
-            MovePointModel.direction = 1;
             that.currentData = data
 
           },
@@ -514,7 +573,7 @@ $.fn.extend({
           x: x + width - 6, y: y - 6,
           radius: 6,
           data: {
-            data: maindata, index: index,type:EDIT_POINT_LAYER2
+            data: maindata, index: index, type: EDIT_POINT_LAYER2
           },
           mousedown: function (layer) {
             var data = layer.data.data;
@@ -532,7 +591,7 @@ $.fn.extend({
           x: x - 6, y: y + height - 6,
           radius: 6,
           data: {
-            data: maindata, index: index,type:EDIT_POINT_LAYER3
+            data: maindata, index: index, type: EDIT_POINT_LAYER3
           },
           mousedown: function (layer) {
             var data = layer.data.data;
@@ -550,7 +609,7 @@ $.fn.extend({
           x: x + width - 6, y: y + height - 6,
           radius: 6,
           data: {
-            data: maindata, index: index,type:EDIT_POINT_LAYER4
+            data: maindata, index: index, type: EDIT_POINT_LAYER4
           },
           mousedown: function (layer) {
             var data = layer.data.data;
