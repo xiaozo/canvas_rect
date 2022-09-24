@@ -288,7 +288,7 @@ $.fn.extend({
 
     this.setEventHooks({
       mousedown: function (layer) {
-        // code to run whenever a layer is added
+       
         const layerType = layer.data.type;
         if (layerType === BG_LAYER) {
           DragBgModel.isDragBg = true
@@ -526,7 +526,6 @@ $.fn.extend({
           data: maindata, index: index, type: SUBJECT_LAYER
         },
         mousedown: function (layer) {
-
           var data = that.currentData
           if (!!data) {
             data.isEdit = false;
@@ -535,7 +534,6 @@ $.fn.extend({
           data = layer.data.data;
           data.activePoint = data.points[layer.data.index]
           data.isEdit = true;
-          // MoveModel.isMove = true
 
           that.currentData = data
           that.edit(data)

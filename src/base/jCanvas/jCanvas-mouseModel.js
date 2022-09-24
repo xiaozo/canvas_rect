@@ -83,7 +83,6 @@ var MoveModel = {
             var group = activePoint.groups[activePoint.groups.length - 1]
 
             var array = canvas.getLayerGroup(group)
-
             for (let index = 0; index < array.length; index++) {
                 const element = array[index];
                 if (!!element.name) {
@@ -118,7 +117,7 @@ var MovePointModel = {
             // console.log(canvas._getSuperChildsByData(data),data);
             if (!!canvas.collisionCheck) {
                 const activePoint = data.activePoint;
-
+                
                 var quadrantClassifyBlock = function (point, rect, quadrantPoints) {
                     ///第一 第二
                     ///第三 第四
