@@ -33,9 +33,9 @@ var MoveModel = {
         return !!this.isMove
     },
     mousemove(e, canvas) {
-        const data = canvas.currentData;
-        const activePoint = data.activePoint
+        const data = canvas.currentData
         if (!!data) {
+            const activePoint = data.activePoint
             const scale = canvas.scale
             var gX = canvas.gX;
             var gY = canvas.gY;
