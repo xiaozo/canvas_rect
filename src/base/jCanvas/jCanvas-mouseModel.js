@@ -260,6 +260,7 @@ var MovePointModel = {
 
 
             const oldData = canvas._tempData(data)
+            var oldClickDataPoint = null
             ///正在点击的点
             var clickPoint;
             if (direction == 2) {
@@ -268,6 +269,7 @@ var MovePointModel = {
                 activePoint.y += cy - gY;
                 activePoint.height += gY - cy;
                 clickPoint = { x: activePoint.x + activePoint.width, y: activePoint.y }
+                oldClickDataPoint = { x: oldData.x + oldData.width, y: oldData.y }
             } else if (direction == 1) {
                 ///左上角
                 activePoint.x += cx - gX;
@@ -275,17 +277,20 @@ var MovePointModel = {
                 activePoint.y += cy - gY;
                 activePoint.height += gY - cy;
                 clickPoint = { x: activePoint.x, y: activePoint.y }
+                oldClickDataPoint = { x: oldData.x, y: oldData.y }
             } else if (direction == 3) {
                 ///左下角
                 activePoint.height += cy - gY;
                 activePoint.x += cx - gX;
                 activePoint.width += gX - cx;
                 clickPoint = { x: activePoint.x, y: activePoint.y + activePoint.height }
+                oldClickDataPoint =  { x: oldData.x, y: oldData.y + oldData.height }
             } else if (direction == 4) {
                 ///右下角
                 activePoint.height += cy - gY;
                 activePoint.width += cx - gX;
                 clickPoint = { x: activePoint.x + activePoint.width, y: activePoint.y + activePoint.height }
+                oldClickDataPoint =  { x: oldData.x + oldData.width, y: oldData.y + oldData.height }
             }
 
             const collisionBlock = function (minRect, maxRect, quadrant) {
@@ -293,7 +298,7 @@ var MovePointModel = {
                     if (!!maxRect) {
                         ///不超过父视图
                         var point = clickPoint
-                        if (!canvas._pointInRect(point, maxRect) && canvas._pointInRect(oldData, maxRect)) {
+                        if (!canvas._pointInRect(point, maxRect) && canvas._pointInRect(oldClickDataPoint, maxRect)) {
                             ///超过父视图 activePoint进行还原
                             activePoint.x = oldData.x
                             activePoint.y = oldData.y
