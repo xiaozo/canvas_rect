@@ -259,7 +259,9 @@ var MovePointModel = {
 
 
 
+            ///保存变换前的rect
             const oldData = canvas._tempData(data)
+             ///保存变换前点击的点
             var oldClickDataPoint = null
             ///正在点击的点
             var clickPoint;
