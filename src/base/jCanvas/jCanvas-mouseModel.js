@@ -239,9 +239,9 @@ var MovePointModel = {
     },
     mousemove(e, canvas) {
         const data = canvas.currentData;
-        const activePoint = data.activePoint
         const direction = this.direction
         if (!!data && direction > 0) {
+            const activePoint = data.activePoint
             const scale = canvas.scale
             var gX = canvas.gX;
             var gY = canvas.gY;
