@@ -117,7 +117,7 @@ var MovePointModel = {
             // console.log(canvas._getSuperChildsByData(data),data);
             if (!!canvas.collisionCheck) {
                 const activePoint = data.activePoint;
-                
+
                 var quadrantClassifyBlock = function (point, rect, quadrantPoints) {
                     ///第一 第二
                     ///第三 第四
@@ -239,6 +239,7 @@ var MovePointModel = {
     },
     mousemove(e, canvas) {
         const data = canvas.currentData;
+
         const direction = this.direction
         if (!!data && direction > 0) {
             const activePoint = data.activePoint
@@ -287,12 +288,12 @@ var MovePointModel = {
                 clickPoint = { x: activePoint.x + activePoint.width, y: activePoint.y + activePoint.height }
             }
 
-            const collisionBlock = function (minRect,maxRect,quadrant) {
+            const collisionBlock = function (minRect, maxRect, quadrant) {
                 if (!!canvas.collisionCheck) {
                     if (!!maxRect) {
                         ///不超过父视图
                         var point = clickPoint
-                        if (!canvas._pointInRect(point, maxRect)) {
+                        if (!canvas._pointInRect(point, maxRect) && canvas._pointInRect(oldData, maxRect)) {
                             ///超过父视图 activePoint进行还原
                             activePoint.x = oldData.x
                             activePoint.y = oldData.y
@@ -307,10 +308,15 @@ var MovePointModel = {
                         ///不允许在子视图内
                         var point = clickPoint
                         if (
-                            activePoint.x > minRect.x ||
-                            activePoint.y > minRect.y ||
-                            activePoint.y + activePoint.height < minRect.y + minRect.height ||
-                            activePoint.x + activePoint.width < minRect.x + minRect.width
+                            (activePoint.x > minRect.x ||
+                                activePoint.y > minRect.y ||
+                                activePoint.y + activePoint.height < minRect.y + minRect.height ||
+                                activePoint.x + activePoint.width < minRect.x + minRect.width)
+                            &&
+                            (oldData.x < minRect.x &&
+                                oldData.y < minRect.y &&
+                                oldData.y + oldData.height > minRect.y + minRect.height &&
+                                oldData.x + oldData.width > minRect.x + minRect.width) ///minRect完全在变化前的rect里
                         ) {
                             ///在子视图内 activePoint进行还原
                             activePoint.x = oldData.x
@@ -358,7 +364,7 @@ var MovePointModel = {
                 }
             }
 
-            collisionBlock(this.minRect,this.maxRect,this.tempQuadrant);
+            collisionBlock(this.minRect, this.maxRect, this.tempQuadrant);
 
             canvas.edit(data)
 
@@ -388,7 +394,7 @@ var MovePointModel = {
             this.maxRect = null
             this.minRect = null
             this.direction = 0
-            
+
         }
 
         return false
