@@ -1,7 +1,6 @@
 ///拖动背景框
 var DragBgModel = {
     isDragBg: false,
-
     mousedown(e, canvas) {
         return !!this.isDragBg
     },
@@ -29,7 +28,83 @@ var DragBgModel = {
 ///移动题目
 var MoveModel = {
     isMove: false,
+    _tempXs: null,
+    _tempYs: null,
+    _xIndex: -1,
+    _yIndex: -1,
+    _tempCollisionRects:null,
+    _checkIntersect(rect1, rect2, type) {
+        if (type == 0) {
+            ///x
+            if (rect2.x + rect2.width < rect1.x ||
+                rect1.x + rect1.width < rect2.x) {
+                return false
+            }
+        } else {
+            ///y
+            if (rect1.y + rect1.height < rect2.y ||
+                rect2.y + rect2.height < rect1.y) {
+                return false
+            }
+        }
+        return true
+    },
     mousedown(e, canvas) {
+        var that = this
+        if (!!canvas.collisionCheck) {
+            if (!!this.isMove) {
+                this._tempXs = []
+                this._tempYs = []
+                this._tempCollisionRects = []
+                const { datas, currentData } = canvas
+                const activePoint = currentData.activePoint
+
+                datas.forEach(data => {
+                    if (data != currentData) {
+                        data.points.forEach(point => {
+                            if (that._checkIntersect(activePoint, point, 0)) {
+                                that._tempCollisionRects.push(point)
+                            }
+
+                            if (that._checkIntersect(activePoint, point, 1)) {
+                                that._tempCollisionRects.push(point)
+                            }
+
+                            that._tempXs.push({
+                                v: point.x,
+                                from: point
+                            })
+
+                            that._tempXs.push({
+                                v: point.x + point.width,
+                                from: point
+                            })
+
+                            that._tempYs.push({
+                                v: point.y,
+                                from: point
+                            })
+
+                            that._tempYs.push({
+                                v: point.y + point.height,
+                                from: point
+                            })
+
+
+                        });
+                    }
+
+                });
+                this._tempXs.sort(function (obj1, obj2) {
+                    return obj1.v - obj2.v
+                })
+                this._tempYs.sort(function (obj1, obj2) {
+                    return obj1.v - obj2.v
+                })
+
+            }
+        }
+
         return !!this.isMove
     },
     mousemove(e, canvas) {
@@ -44,6 +119,8 @@ var MoveModel = {
 
             var cx = e.clientX - canvasLeft;
             var cy = e.clientY - canvasTop;
+
+
             ///转成坐标轴上的坐标
             gX /= scale;
             gY /= scale;
@@ -51,23 +128,146 @@ var MoveModel = {
             cy /= scale;
 
             if (!!this.isMove) {
-                ///移动
-                activePoint.y += cy - gY;
-                activePoint.x += cx - gX;
+                var iscollision = false
 
-                if (!!canvas.togetherMove) {
-                    ///带着孩子一起移动
-                    var group = activePoint.groups[activePoint.groups.length - 1]
-                    var xx = cx - gX
-                    var yy = cy - gY
-                    canvas.setLayerGroup(group, {
-                        x: '+=' + xx,
-                        y: '+=' + yy
-                    }).drawLayers()
-                    return;
+                if (!!canvas.collisionCheck) {
+                    if (!!this._tempXs.length) {
+                        if (cx - gX > 0) {
+                            ///向右
+                            let index = this._xIndex == -1 ? 0 : this._xIndex
+                            for (index; index < this._tempXs.length; index++) {
+                                var newData = canvas._tempData(data)
+                                const element = this._tempXs[index];
+                                if (element.v > newData.x + newData.width) {
+                                    newData.x += cx - gX;
+                                    if (!!this._checkIntersect(newData, { x: element.v, y: 0, width: 0, height: 0 }, 0)) {
+                                        if (this._tempCollisionRects.indexOf(element.from) == -1) {
+                                            this._tempCollisionRects.unshift(element.from)
+                                        }
+                                    } else {
+                                        break
+                                    }
+
+                                }
+                            }
+                            this._xIndex = index
+
+                        } else if (cx - gX < 0) {
+                            ///向左
+                            let index = this._xIndex == -1 ? 0 : this._tempXs.length - 1
+                            for (index; index >= 0; index--) {
+                                var newData = canvas._tempData(data)
+                                const element = this._tempXs[index];
+                                if (element.v < newData.x) {
+                                    newData.x += cx - gX;
+                                    if (!!this._checkIntersect(newData, { x: element.v, y: 0, width: 0, height: 0 }, 0)) {
+                                        if (this._tempCollisionRects.indexOf(element.from) == -1) {
+                                            this._tempCollisionRects.unshift(element.from)
+                                        }
+                                    } else {
+                                        break
+                                    }
+
+                                }
+                            }
+                            this._xIndex = index
+
+                        }
+                    }
+
+
+                    if (!!this._tempYs.length) {
+                        if (cy - gY > 0) {
+                            ///向下
+                            let index = this._yIndex == -1 ? 0 : this._yIndex
+                            for (index; index < this._tempYs.length; index++) {
+                                var newData = canvas._tempData(data)
+                                const element = this._tempYs[index];
+                                if (element.v > newData.y + newData.height) {
+                                    newData.y += cy - gY;
+                                    if (!!this._checkIntersect(newData, { x: 0, y: element.v, width: 0, height: 0 }, 1)) {
+                                        if (this._tempCollisionRects.indexOf(element.from) == -1) {
+                                            this._tempCollisionRects.unshift(element.from)
+                                        }
+                                    } else {
+                                        break
+                                    }
+
+                                }
+                            }
+                            this._yIndex = index
+
+                        } else if (cy - gY < 0) {
+                            ///向上
+                            let index = this._yIndex == -1 ? 0 : this._tempYs.length - 1
+                            for (index; index >= 0; index--) {
+                                var newData = canvas._tempData(data)
+                                const element = this._tempYs[index];
+                                if (element.v < newData.y) {
+                                    newData.y += cy - gY;
+                                    if (!!this._checkIntersect(newData, { x: 0, y: element.v, width: 0, height: 0 }, 1)) {
+                                        if (this._tempCollisionRects.indexOf(element.from) == -1) {
+                                            this._tempCollisionRects.unshift(element.from)
+                                        }
+                                    } else {
+                                        break
+                                    }
+
+                                }
+                            }
+                            this._yIndex = index
+                        }
+                    }
+
+
+                    let index = 0
+                    var newData = canvas._tempData(data)
+                    newData.y += cy - gY;
+                    newData.x += cx - gX;
+
+                    while (index < this._tempCollisionRects.length) {
+                        const point = this._tempCollisionRects[index]
+
+                        if (!this._checkIntersect(newData, point, 0) && !this._checkIntersect(newData, point, 1)) {
+                            this._tempCollisionRects.splice(index, 1)
+
+                        } else {
+                            if (!iscollision && !!canvas._checkIntersect(point, newData) && !canvas._checkIntersect(point, activePoint)) {
+                                iscollision = true
+                            }
+
+                            index++;
+
+                        }
+                    }
+
+
                 }
 
-                canvas.edit(data)
+
+                console.log(this._tempCollisionRects);
+
+                if (!iscollision) {
+                    ///移动
+                    activePoint.y += cy - gY;
+                    activePoint.x += cx - gX;
+
+                    if (!!canvas.togetherMove) {
+                        ///带着孩子一起移动
+                        var group = activePoint.groups[activePoint.groups.length - 1]
+                        var xx = cx - gX
+                        var yy = cy - gY
+                        canvas.setLayerGroup(group, {
+                            x: '+=' + xx,
+                            y: '+=' + yy
+                        }).drawLayers()
+                        return;
+                    }
+
+                    canvas.edit(data)
+                }
+
+
                 return true
             }
         }
@@ -98,7 +298,11 @@ var MoveModel = {
 
         }
         this.isMove = false
-
+        this._tempXs = null
+        this._tempYs = null
+        this._tempCollisions = null
+        this._xIndex = -1
+        this._yIndex = -1
 
         return false
     },
@@ -107,7 +311,7 @@ var MoveModel = {
 ///拖动点
 var MovePointModel = {
     direction: 0,
-    tempQuadrant: [],
+    _tempQuadrant: [],
     minRect: null,
     maxRect: null,
     mousedown(e, canvas) {
@@ -179,7 +383,7 @@ var MovePointModel = {
                     quadrantPoints: [[], [], [], []],
 
                 };
-                this.tempQuadrant = quadrant
+                this._tempQuadrant = quadrant
 
                 if (direction == 1) {
                     ///左上角
@@ -261,7 +465,7 @@ var MovePointModel = {
 
             ///保存变换前的rect
             const oldData = canvas._tempData(data)
-             ///保存变换前点击的点
+            ///保存变换前点击的点
             var oldClickDataPoint = null
             ///正在点击的点
             var clickPoint;
@@ -286,13 +490,13 @@ var MovePointModel = {
                 activePoint.x += cx - gX;
                 activePoint.width += gX - cx;
                 clickPoint = { x: activePoint.x, y: activePoint.y + activePoint.height }
-                oldClickDataPoint =  { x: oldData.x, y: oldData.y + oldData.height }
+                oldClickDataPoint = { x: oldData.x, y: oldData.y + oldData.height }
             } else if (direction == 4) {
                 ///右下角
                 activePoint.height += cy - gY;
                 activePoint.width += cx - gX;
                 clickPoint = { x: activePoint.x + activePoint.width, y: activePoint.y + activePoint.height }
-                oldClickDataPoint =  { x: oldData.x + oldData.width, y: oldData.y + oldData.height }
+                oldClickDataPoint = { x: oldData.x + oldData.width, y: oldData.y + oldData.height }
             }
 
             const collisionBlock = function (minRect, maxRect, quadrant) {
@@ -371,7 +575,7 @@ var MovePointModel = {
                 }
             }
 
-            collisionBlock(this.minRect, this.maxRect, this.tempQuadrant);
+            collisionBlock(this.minRect, this.maxRect, this._tempQuadrant);
 
             canvas.edit(data)
 
@@ -397,7 +601,7 @@ var MovePointModel = {
 
             canvas.edit(data)
 
-            this.tempQuadrant = null
+            this._tempQuadrant = null
             this.maxRect = null
             this.minRect = null
             this.direction = 0
