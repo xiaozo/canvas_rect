@@ -419,19 +419,10 @@ var MovePointModel = {
                 ///quadrantPoints进行距离近的排序
                 for (let index = 0; index < quadrant.quadrantPoints.length; index++) {
                     const quadrantPoints = quadrant.quadrantPoints[index];
-                    if (quadrantPoints.length > 3) {
+                    if (quadrantPoints.length > 4) {
                         quadrantPoints.sort(function (rect1, rect2) {
-                            var rect1D = Math.min(
-                                Math.abs(immobilityPoint.x - rect1.x),
-                                Math.abs(immobilityPoint.y - rect1.y)
-                            )
-
-                            var rect2D = Math.min(
-                                Math.abs(immobilityPoint.x - rect2.x),
-                                Math.abs(immobilityPoint.y - rect2.y)
-                            )
-
-                            return rect1D - rect2D
+                            return canvas._minDistanceOfRectangles({x:immobilityPoint.x,y:immobilityPoint.y,width:1,height:1},rect1) 
+                            - canvas._minDistanceOfRectangles({x:immobilityPoint.x,y:immobilityPoint.y,width:1,height:1},rect2)
                         });
                     }
                 }
@@ -554,6 +545,7 @@ var MovePointModel = {
                         } else {
                             otherRects = quadrant.quadrantPoints[3]
                         }
+
 
                         var iscollision = false
                         for (let index = 0; index < otherRects.length; index++) {
