@@ -28,11 +28,12 @@ var DragBgModel = {
 ///移动题目
 var MoveModel = {
     isMove: false,
+    collisionCheck:true,
     _tempXs: null,
     _tempYs: null,
     _xIndex: -1,
     _yIndex: -1,
-    _tempCollisionRects:null,
+    _tempCollisionRects: null,
     _checkIntersect(rect1, rect2, type) {
         if (type == 0) {
             ///x
@@ -49,13 +50,106 @@ var MoveModel = {
         }
         return true
     },
+    ///0:上   1：左    2：下     3：右
+    _directionRect(rect, targetRect) {
+        if (targetRect.y + targetRect.height <= rect.y) {
+            return 0
+        } else if (rect.y + rect.height <= targetRect.y) {
+            return 2
+        } else if (targetRect.x + targetRect.width <= rect.x) {
+            return 1
+        } else {
+            return 3
+        }
+    },
+    _pushCollisionRect(list, rect, direction) {
+
+        if (list.indexOf(rect) == -1) {
+            const { x, y, width, height } = rect
+            let i = 0;
+            if (direction == 0 || direction == 2) {
+                ///上方或者下方
+                while (i < list.length) {
+                    const element = list[i];
+                    if (
+                        x >= element.x && x + width <= element.x + element.width &&
+                        (
+                            (element.y > y && direction == 0) ||
+                            (element.y < y && direction == 2)
+                        )
+                    ) {
+                        return
+                    }
+                    if (element.x > x) {
+                        i--;
+                        break
+                    }
+                    i++;
+                }
+                i = Math.max(0, i)
+                list.splice(i, 0, rect); i++;
+
+                while (i < list.length) {
+                    const element = list[i];
+                    if (x <= element.x && x + width >= element.x + element.width &&
+                        (
+                            (element.y < y && direction == 0) ||
+                            (element.y > y && direction == 2)
+                        )
+                    ) {
+                        list.splice(i, 1)
+                        continue
+                    }
+                    i++;
+                }
+
+            } else {
+                ///向左或者向右
+                while (i < list.length) {
+                    const element = list[i];
+                    if (
+                        y >= element.y && y + height <= element.y + element.height &&
+                        (
+                            (element.x > x && direction == 1) ||
+                            (element.x < x && direction == 4)
+                        )
+                    ) {
+                        return
+                    }
+                    if (element.y > y) {
+                        i--;
+                        break
+                    }
+                    i++;
+                }
+
+                i = Math.max(0, i)
+                list.splice(i, 0, rect); i++;
+
+                while (i < list.length) {
+                    const element = list[i];
+                    if (y <= element.y && y + height >= element.y + element.height &&
+                        (
+                            (element.x < x && direction == 1) ||
+                            (element.x > x && direction == 4)
+                        )
+                    ) {
+                        list.splice(i, 1)
+                        continue
+                    }
+                    i++;
+                }
+            }
+        }
+
+    },
     mousedown(e, canvas) {
         var that = this
-        if (!!canvas.collisionCheck) {
+        if (!!this.collisionCheck) {
             if (!!this.isMove) {
                 this._tempXs = []
                 this._tempYs = []
-                this._tempCollisionRects = []
+                this._tempCollisionRects = [[], [], [], []]
                 const { datas, currentData } = canvas
                 const activePoint = currentData.activePoint
 
@@ -63,11 +157,15 @@ var MoveModel = {
                     if (data != currentData) {
                         data.points.forEach(point => {
                             if (that._checkIntersect(activePoint, point, 0)) {
-                                that._tempCollisionRects.push(point)
+                                var direction = that._directionRect(activePoint, point)
+                                var list = that._tempCollisionRects[direction]
+                                that._pushCollisionRect(list, point, direction)
                             }
 
                             if (that._checkIntersect(activePoint, point, 1)) {
-                                that._tempCollisionRects.push(point)
+                                var direction = that._directionRect(activePoint, point)
+                                var list = that._tempCollisionRects[direction]
+                                that._pushCollisionRect(list, point, direction)
                             }
 
                             that._tempXs.push({
@@ -102,6 +200,8 @@ var MoveModel = {
                     return obj1.v - obj2.v
                 })
 
+                console.log(that._tempCollisionRects);
+
             }
         }
 
@@ -129,8 +229,8 @@ var MoveModel = {
 
             if (!!this.isMove) {
                 var iscollision = false
-
-                if (!!canvas.collisionCheck) {
+                const that = this
+                if (!!this.collisionCheck) {
                     if (!!this._tempXs.length) {
                         if (cx - gX > 0) {
                             ///向右
@@ -141,9 +241,10 @@ var MoveModel = {
                                 if (element.v > newData.x + newData.width) {
                                     newData.x += cx - gX;
                                     if (!!this._checkIntersect(newData, { x: element.v, y: 0, width: 0, height: 0 }, 0)) {
-                                        if (this._tempCollisionRects.indexOf(element.from) == -1) {
-                                            this._tempCollisionRects.unshift(element.from)
-                                        }
+                                        var direction = this._directionRect(newData, element.from)
+                                        var list = this._tempCollisionRects[direction]
+                                        this._pushCollisionRect(list, element.from, direction)
+
                                     } else {
                                         break
                                     }
@@ -161,9 +262,9 @@ var MoveModel = {
                                 if (element.v < newData.x) {
                                     newData.x += cx - gX;
                                     if (!!this._checkIntersect(newData, { x: element.v, y: 0, width: 0, height: 0 }, 0)) {
-                                        if (this._tempCollisionRects.indexOf(element.from) == -1) {
-                                            this._tempCollisionRects.unshift(element.from)
-                                        }
+                                        var direction = this._directionRect(newData, element.from)
+                                        var list = this._tempCollisionRects[direction]
+                                        this._pushCollisionRect(list, element.from, direction)
                                     } else {
                                         break
                                     }
@@ -186,9 +287,9 @@ var MoveModel = {
                                 if (element.v > newData.y + newData.height) {
                                     newData.y += cy - gY;
                                     if (!!this._checkIntersect(newData, { x: 0, y: element.v, width: 0, height: 0 }, 1)) {
-                                        if (this._tempCollisionRects.indexOf(element.from) == -1) {
-                                            this._tempCollisionRects.unshift(element.from)
-                                        }
+                                        var direction = this._directionRect(newData, element.from)
+                                        var list = this._tempCollisionRects[direction]
+                                        this._pushCollisionRect(list, element.from, direction)
                                     } else {
                                         break
                                     }
@@ -206,9 +307,9 @@ var MoveModel = {
                                 if (element.v < newData.y) {
                                     newData.y += cy - gY;
                                     if (!!this._checkIntersect(newData, { x: 0, y: element.v, width: 0, height: 0 }, 1)) {
-                                        if (this._tempCollisionRects.indexOf(element.from) == -1) {
-                                            this._tempCollisionRects.unshift(element.from)
-                                        }
+                                        var direction = this._directionRect(newData, element.from)
+                                        var list = this._tempCollisionRects[direction]
+                                        this._pushCollisionRect(list, element.from, direction)
                                     } else {
                                         break
                                     }
@@ -220,32 +321,40 @@ var MoveModel = {
                     }
 
 
-                    let index = 0
                     var newData = canvas._tempData(data)
                     newData.y += cy - gY;
                     newData.x += cx - gX;
 
-                    while (index < this._tempCollisionRects.length) {
-                        const point = this._tempCollisionRects[index]
+                    let removeCollisionRectsBlock = function (list) {
+                        let index = 0
+                        while (index < list.length) {
+                            const point = list[index]
+                            if (!that._checkIntersect(newData, point, 0) && !that._checkIntersect(newData, point, 1)) {
+                                list.splice(index, 1)
 
-                        if (!this._checkIntersect(newData, point, 0) && !this._checkIntersect(newData, point, 1)) {
-                            this._tempCollisionRects.splice(index, 1)
+                            } else {
 
-                        } else {
-                            if (!iscollision && !!canvas._checkIntersect(point, newData) && !canvas._checkIntersect(point, activePoint)) {
-                                iscollision = true
+                                if (!iscollision && !!canvas._checkIntersect(point, newData) && !canvas._checkIntersect(point, activePoint)) {
+                                    iscollision = true
+
+                                }
+
+                                index++;
+
                             }
-
-                            index++;
-
                         }
                     }
 
+                    this._tempCollisionRects.forEach(list => {
+                        removeCollisionRectsBlock(list)
+                    });
 
+
+
+                    console.log(this._tempCollisionRects);
                 }
 
 
-                console.log(this._tempCollisionRects);
 
                 if (!iscollision) {
                     ///移动
@@ -421,8 +530,8 @@ var MovePointModel = {
                     const quadrantPoints = quadrant.quadrantPoints[index];
                     if (quadrantPoints.length > 4) {
                         quadrantPoints.sort(function (rect1, rect2) {
-                            return canvas._minDistanceOfRectangles({x:immobilityPoint.x,y:immobilityPoint.y,width:1,height:1},rect1) 
-                            - canvas._minDistanceOfRectangles({x:immobilityPoint.x,y:immobilityPoint.y,width:1,height:1},rect2)
+                            return canvas._minDistanceOfRectangles({ x: immobilityPoint.x, y: immobilityPoint.y, width: 1, height: 1 }, rect1)
+                                - canvas._minDistanceOfRectangles({ x: immobilityPoint.x, y: immobilityPoint.y, width: 1, height: 1 }, rect2)
                         });
                     }
                 }
