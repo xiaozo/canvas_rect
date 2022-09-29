@@ -199,7 +199,7 @@ var MoveModel = {
                     return obj1.v - obj2.v
                 })
 
-                console.log(that._tempCollisionRects);
+                // console.log(that._tempCollisionRects);
 
             }
         }
