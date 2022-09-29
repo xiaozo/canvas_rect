@@ -63,7 +63,6 @@ var MoveModel = {
         }
     },
     _pushCollisionRect(list, rect, direction) {
-
         if (list.indexOf(rect) == -1) {
             const { x, y, width, height } = rect
             let i = 0;
@@ -111,7 +110,7 @@ var MoveModel = {
                         y >= element.y && y + height <= element.y + element.height &&
                         (
                             (element.x > x && direction == 1) ||
-                            (element.x < x && direction == 4)
+                            (element.x < x && direction == 3)
                         )
                     ) {
                         return
@@ -131,7 +130,7 @@ var MoveModel = {
                     if (y <= element.y && y + height >= element.y + element.height &&
                         (
                             (element.x < x && direction == 1) ||
-                            (element.x > x && direction == 4)
+                            (element.x > x && direction == 3)
                         )
                     ) {
                         list.splice(i, 1)
@@ -351,7 +350,7 @@ var MoveModel = {
 
 
 
-                    console.log(this._tempCollisionRects);
+                    console.log(this._tempCollisionRects, this._xIndex, this._yIndex);
                 }
 
 
