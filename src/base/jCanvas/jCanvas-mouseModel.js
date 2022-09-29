@@ -28,7 +28,7 @@ var DragBgModel = {
 ///移动题目
 var MoveModel = {
     isMove: false,
-    collisionCheck:true,
+    collisionCheck:false,
     _tempXs: null,
     _tempYs: null,
     _xIndex: -1,
@@ -350,7 +350,7 @@ var MoveModel = {
 
 
 
-                    console.log(this._tempCollisionRects, this._xIndex, this._yIndex);
+                    // console.log(this._tempCollisionRects, this._xIndex, this._yIndex);
                 }
 
 
