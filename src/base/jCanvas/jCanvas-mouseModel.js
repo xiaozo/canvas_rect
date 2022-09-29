@@ -90,6 +90,7 @@ var MoveModel = {
 
                 while (i < list.length) {
                     const element = list[i];
+                    ////去除后面包裹在rect里的
                     if (x <= element.x && x + width >= element.x + element.width &&
                         (
                             (element.y < y && direction == 0) ||
@@ -155,13 +156,7 @@ var MoveModel = {
                 datas.forEach(data => {
                     if (data != currentData) {
                         data.points.forEach(point => {
-                            if (that._checkIntersect(activePoint, point, 0)) {
-                                var direction = that._directionRect(activePoint, point)
-                                var list = that._tempCollisionRects[direction]
-                                that._pushCollisionRect(list, point, direction)
-                            }
-
-                            if (that._checkIntersect(activePoint, point, 1)) {
+                            if (that._checkIntersect(activePoint, point, 0) || that._checkIntersect(activePoint, point, 1)) {
                                 var direction = that._directionRect(activePoint, point)
                                 var list = that._tempCollisionRects[direction]
                                 that._pushCollisionRect(list, point, direction)
